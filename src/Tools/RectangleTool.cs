@@ -132,21 +132,21 @@ namespace MSPaint.Tools
             int minY = System.Math.Min(y0, y1);
             int maxY = System.Math.Max(y0, y1);
 
-            // Draw rectangle outline
+            // Draw rectangle outline (with change tracking)
             for (int x = minX; x <= maxX; x++)
             {
                 if (IsValidPosition(x, minY))
-                    Grid.SetPixel(x, minY, color); // Top edge
+                    SetPixelWithTracking(x, minY, color); // Top edge
                 if (IsValidPosition(x, maxY))
-                    Grid.SetPixel(x, maxY, color); // Bottom edge
+                    SetPixelWithTracking(x, maxY, color); // Bottom edge
             }
 
             for (int y = minY; y <= maxY; y++)
             {
                 if (IsValidPosition(minX, y))
-                    Grid.SetPixel(minX, y, color); // Left edge
+                    SetPixelWithTracking(minX, y, color); // Left edge
                 if (IsValidPosition(maxX, y))
-                    Grid.SetPixel(maxX, y, color); // Right edge
+                    SetPixelWithTracking(maxX, y, color); // Right edge
             }
         }
 

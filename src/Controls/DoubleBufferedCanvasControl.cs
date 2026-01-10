@@ -8,6 +8,7 @@ using MSPaint.Models;
 using MSPaint.Services;
 using MSPaint.Tools;
 using MSPaint.Utils;
+using MSPaint.Commands;
 using WpfUserControl = System.Windows.Controls.UserControl;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
 
@@ -17,6 +18,7 @@ namespace MSPaint.Controls
     {
         private PixelGrid? _pixelGrid;
         private RenderService _renderService;
+        private HistoryService _historyService;
         private ITool? _currentTool;
         private bool _isDrawing;
         private System.Windows.Point _lastMousePosition;
@@ -33,6 +35,7 @@ namespace MSPaint.Controls
         {
             InitializeComponent();
             _renderService = new RenderService();
+            _historyService = new HistoryService(maxHistorySize: 50);
             this.Loaded += DoubleBufferedCanvasControl_Loaded;
             
             // Enable mouse capture for smooth drawing
@@ -59,6 +62,9 @@ namespace MSPaint.Controls
             _cachedBitmap = null;
             _previewBitmap = null;
             _previewBitmapSourceSet = false;
+            
+            // Clear history when initializing new canvas
+            _historyService.Clear();
             
             // Initialize all pixels with background color
             for (int y = 0; y < _pixelGrid.Height; y++)
@@ -93,6 +99,9 @@ namespace MSPaint.Controls
             _previewBitmap = null;
             _previewBitmapSourceSet = false;
             
+            // Clear history when loading from file
+            _historyService.Clear();
+            
             // Mark all as dirty for initial render
             _pixelGrid.MarkAllDirty();
             
@@ -115,6 +124,12 @@ namespace MSPaint.Controls
 
             CaptureMouse();
             _isDrawing = true;
+            
+            // Start collecting pixel changes for command pattern
+            if (_currentTool is BaseTool baseTool)
+            {
+                baseTool.StartCollectingChanges();
+            }
             
             // Get position relative to BackImage (the actual rendered canvas)
             var position = e.GetPosition(BackImage);
@@ -164,6 +179,20 @@ namespace MSPaint.Controls
             if (gridPosition.HasValue)
             {
                 _currentTool.OnMouseUp((int)gridPosition.Value.X, (int)gridPosition.Value.Y);
+                
+                // Stop collecting changes and create command
+                if (_currentTool is BaseTool baseTool)
+                {
+                    var pixelChanges = baseTool.StopCollectingChanges();
+                    
+                    if (pixelChanges != null && pixelChanges.Count > 0)
+                    {
+                        // Create command and add to history
+                        var command = new DrawCommand(_pixelGrid, pixelChanges);
+                        _historyService.AddCommand(command);
+                    }
+                }
+                
                 await RenderAsync(force: true);
             }
         }
@@ -182,6 +211,36 @@ namespace MSPaint.Controls
                 return null;
 
             return new System.Windows.Point(gridX, gridY);
+        }
+
+        /// <summary>
+        /// Undo the last drawing operation
+        /// </summary>
+        public async Task Undo()
+        {
+            if (_pixelGrid == null) return;
+
+            if (_historyService.Undo())
+            {
+                // Mark all as dirty and re-render
+                _pixelGrid.MarkAllDirty();
+                await RenderAsync(force: true);
+            }
+        }
+
+        /// <summary>
+        /// Redo the last undone operation
+        /// </summary>
+        public async Task Redo()
+        {
+            if (_pixelGrid == null) return;
+
+            if (_historyService.Redo())
+            {
+                // Mark all as dirty and re-render
+                _pixelGrid.MarkAllDirty();
+                await RenderAsync(force: true);
+            }
         }
 
         private async Task RenderAsync(bool force = false)
@@ -242,7 +301,10 @@ namespace MSPaint.Controls
                     _bitmapSourceSet = false;
                     // Initial render - full update for new bitmap
                     _pixelGrid.MarkAllDirty();
-                    await _renderService.UpdateBitmapFullAsync(_cachedBitmap, _pixelGrid);
+                    if (_cachedBitmap != null)
+                    {
+                        await _renderService.UpdateBitmapFullAsync(_cachedBitmap, _pixelGrid);
+                    }
                     Logger.LogRender("Main bitmap created and rendered (full)", width, height, force);
                 }
                 else
@@ -283,6 +345,7 @@ namespace MSPaint.Controls
                     }
                     
                     // Clear preview bitmap
+                    if (_previewBitmap == null) return; // Safety check
                     _previewBitmap.Lock();
                     try
                     {
@@ -302,7 +365,10 @@ namespace MSPaint.Controls
                     }
                     
                     // Render preview (1:1 mapping - no pixelSize parameter needed)
-                    _currentTool.RenderPreview(_previewBitmap, 1);
+                    if (_currentTool != null && _previewBitmap != null)
+                    {
+                        _currentTool.RenderPreview(_previewBitmap, 1);
+                    }
                     Logger.LogRender("Preview rendered", width, height, force);
                 }
                 else

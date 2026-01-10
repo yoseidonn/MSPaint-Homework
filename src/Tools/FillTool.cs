@@ -46,7 +46,7 @@ namespace MSPaint.Tools
                 if (!IsValidPosition(x, y)) continue;
                 if (Grid.GetPixel(x, y) != targetColor) continue;
 
-                Grid.SetPixel(x, y, fillColor);
+                SetPixelWithTracking(x, y, fillColor);
 
                 // Check neighbors
                 var neighbors = new[]

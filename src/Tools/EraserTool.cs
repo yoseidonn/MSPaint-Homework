@@ -25,10 +25,10 @@ namespace MSPaint.Tools
             _lastX = x;
             _lastY = y;
             
-            // Erase the initial pixel
+            // Erase the initial pixel (with change tracking)
             if (IsValidPosition(x, y))
             {
-                Grid.SetPixel(x, y, _eraseColor);
+                SetPixelWithTracking(x, y, _eraseColor);
             }
         }
 
@@ -47,10 +47,10 @@ namespace MSPaint.Tools
         {
             if (!_isDrawing) return;
 
-            // Erase final pixel if needed
+            // Erase final pixel if needed (with change tracking)
             if (IsValidPosition(x, y) && (x != _lastX || y != _lastY))
             {
-                Grid.SetPixel(x, y, _eraseColor);
+                SetPixelWithTracking(x, y, _eraseColor);
             }
 
             _isDrawing = false;
@@ -72,7 +72,7 @@ namespace MSPaint.Tools
             {
                 if (IsValidPosition(x, y))
                 {
-                    Grid.SetPixel(x, y, _eraseColor);
+                    SetPixelWithTracking(x, y, _eraseColor);
                 }
 
                 if (x == x1 && y == y1) break;

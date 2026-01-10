@@ -22,9 +22,10 @@ Memory usage still high (700MB-1GB). First render uses 350MB. Pencil increases 1
 6. **RenderService Refactor**: All pixel scaling loops removed, direct 1:1 pixel mapping
 
 ## How Did It Effect
-- Expected: Memory usage drops from 350MB to ~1.6MB for 640x640 canvas
-- Expected: Rectangle/Ellipse preview no longer causes 200MB jumps
-- Expected: Pencil tool memory usage minimal (only dirty pixels rendered)
+Memory usage drops from 350MB to ~1.6MB for 640x640 canvas
+Rectangle/Ellipse preview no longer causes 200MB jumps
+Pencil tool memory usage minimal (only dirty pixels rendered)
+All tested
 
 **Files Modified:**
 - `src/Controls/DoubleBufferedCanvasControl.xaml`

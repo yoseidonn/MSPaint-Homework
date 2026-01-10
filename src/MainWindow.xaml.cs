@@ -256,5 +256,26 @@ namespace MSPaint
                 _ => MediaColors.Black
             };
         }
+
+        // Keyboard shortcut handling
+        private async void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            var canvas = GetCanvasControl();
+            if (canvas == null) return;
+
+            // Ctrl+Z: Undo
+            if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                await canvas.Undo();
+                e.Handled = true;
+            }
+            // Ctrl+Shift+Z or Ctrl+Y: Redo
+            else if ((e.Key == Key.Z && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) ||
+                     (e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control))
+            {
+                await canvas.Redo();
+                e.Handled = true;
+            }
+        }
     }
 }

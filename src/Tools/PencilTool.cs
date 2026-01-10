@@ -25,10 +25,10 @@ namespace MSPaint.Tools
             _lastX = x;
             _lastY = y;
             
-            // Draw the initial pixel
+            // Draw the initial pixel (with change tracking)
             if (IsValidPosition(x, y))
             {
-                Grid.SetPixel(x, y, _drawColor);
+                SetPixelWithTracking(x, y, _drawColor);
             }
         }
 
@@ -47,10 +47,10 @@ namespace MSPaint.Tools
         {
             if (!_isDrawing) return;
 
-            // Draw final pixel if needed
+            // Draw final pixel if needed (with change tracking)
             if (IsValidPosition(x, y) && (x != _lastX || y != _lastY))
             {
-                Grid.SetPixel(x, y, _drawColor);
+                SetPixelWithTracking(x, y, _drawColor);
             }
 
             _isDrawing = false;
@@ -72,7 +72,7 @@ namespace MSPaint.Tools
             {
                 if (IsValidPosition(x, y))
                 {
-                    Grid.SetPixel(x, y, _drawColor);
+                    SetPixelWithTracking(x, y, _drawColor);
                 }
 
                 if (x == x1 && y == y1) break;

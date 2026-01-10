@@ -119,13 +119,13 @@ namespace MSPaint.Tools
 
             if (radiusX == 0 && radiusY == 0)
             {
-                // Single point
+                // Single point (with change tracking)
                 if (IsValidPosition(centerX, centerY))
-                    Grid.SetPixel(centerX, centerY, color);
+                    SetPixelWithTracking(centerX, centerY, color);
                 return;
             }
 
-            // Draw ellipse using midpoint algorithm
+            // Draw ellipse using midpoint algorithm (with change tracking)
             for (int angle = 0; angle < 360; angle++)
             {
                 double radians = angle * System.Math.PI / 180.0;
@@ -133,7 +133,7 @@ namespace MSPaint.Tools
                 int y = centerY + (int)(radiusY * System.Math.Sin(radians));
 
                 if (IsValidPosition(x, y))
-                    Grid.SetPixel(x, y, color);
+                    SetPixelWithTracking(x, y, color);
             }
         }
 

@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MSPaint"
         mc:Ignorable="d"
-        Title="MSPaint" Height="600" Width="1000">
+        Title="MSPaint" Height="600" Width="1000"
+        KeyDown="Window_KeyDown">
     <DockPanel LastChildFill="True">
         <!-- Top menu -->
         <Menu DockPanel.Dock="Top">
