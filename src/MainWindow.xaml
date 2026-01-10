@@ -56,7 +56,7 @@
             <!-- Left vertical toolbar -->
             <Border Grid.Column="0" Background="#FFF0EFEF" BorderBrush="#FFDADADA" BorderThickness="1" Padding="6">
                 <StackPanel>
-                    <!-- Tool buttons: basit þekiller ile gösterim -->
+                    <!-- Tool buttons: basit sekiller ile gÃ¶sterim -->
                     <Button ToolTip="Select" Width="40" Height="40" Margin="0,2">
                         <Viewbox>
                             <Path Data="M2,2 L18,18 M18,2 L2,18" Stroke="Black" StrokeThickness="2"/>

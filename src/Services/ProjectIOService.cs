@@ -9,7 +9,7 @@ namespace MSPaint.Services
             // placeholder
         }
 
-        public PixelGrid Load(string path)
+        public PixelGrid? Load(string path)
         {
             return null;
         }

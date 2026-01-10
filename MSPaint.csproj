@@ -1,11 +1,21 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
+    <RootNamespace>MSPaint</RootNamespace>
+    <AssemblyName>MSPaint</AssemblyName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- App.xaml lives under src and is the application definition -->
+    <ApplicationDefinition Include="src\App.xaml" />
+
+    <!-- other content under src -->
+    <None Include="src\**\*.*" Exclude="src\**\*.cs;src\**\*.xaml" />
+  </ItemGroup>
 
 </Project>
