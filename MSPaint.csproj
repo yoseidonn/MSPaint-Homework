@@ -8,14 +8,24 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MSPaint</RootNamespace>
     <AssemblyName>MSPaint</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    
+    <!-- Make all builds self-contained (includes .NET runtime) -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- App.xaml lives under src and is the application definition -->
     <ApplicationDefinition Include="src\App.xaml" />
 
+    <!-- Exclude the duplicate src\MSPaint directory from compilation -->
+    <Compile Remove="src\MSPaint\**" />
+    <Page Remove="src\MSPaint\**" />
+    <None Remove="src\MSPaint\**" />
+
     <!-- other content under src -->
-    <None Include="src\**\*.*" Exclude="src\**\*.cs;src\**\*.xaml" />
+    <None Include="src\**\*.*" Exclude="src\**\*.cs;src\**\*.xaml;src\MSPaint\**" />
   </ItemGroup>
 
 </Project>
