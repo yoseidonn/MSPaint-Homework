@@ -18,6 +18,7 @@ namespace MSPaint
         private MediaColor _primaryColor = MediaColors.Black;
         private MediaColor _secondaryColor = MediaColors.White;
         private System.Windows.Controls.Button? _selectedToolButton;
+        private string? _currentFilePath; // Track current file path for Save
 
         public MainWindow()
         {
@@ -276,6 +277,138 @@ namespace MSPaint
                 await canvas.Redo();
                 e.Handled = true;
             }
+            // Ctrl+S: Save
+            else if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                FileSave_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+Shift+S: Save As
+            else if (e.Key == Key.S && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
+            {
+                FileSaveAs_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+O: Open
+            else if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                FileOpen_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            // Ctrl+N: New
+            else if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                FileNew_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
+
+        // File menu handlers
+        private void FileNew_Click(object sender, RoutedEventArgs e)
+        {
+            // Open canvas setup window for new canvas
+            var setupWindow = new Pages.CanvasSetupWindow();
+            if (setupWindow.ShowDialog() == true)
+            {
+                _currentFilePath = null; // Reset current file path
+                _ = InitializeCanvasAsync(setupWindow);
+            }
+        }
+
+        private async void FileOpen_Click(object sender, RoutedEventArgs e)
+        {
+            var canvas = GetCanvasControl();
+            if (canvas == null) return;
+
+            var openDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = canvas.GetFileDialogFilter(),
+                Title = "Open Image File"
+            };
+
+            if (openDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var ioService = new MSPaint.Services.ProjectIOService();
+                    var loadedGrid = await ioService.LoadAsync(openDialog.FileName);
+
+                    if (loadedGrid != null)
+                    {
+                        await canvas.InitializeCanvas(loadedGrid);
+                        _currentFilePath = openDialog.FileName;
+                        UpdateWindowTitle();
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private async void FileSave_Click(object sender, RoutedEventArgs e)
+        {
+            var canvas = GetCanvasControl();
+            if (canvas == null) return;
+
+            // If we have a current file path, save to it
+            if (!string.IsNullOrEmpty(_currentFilePath))
+            {
+                try
+                {
+                    await canvas.SaveAsync(_currentFilePath);
+                    UpdateWindowTitle();
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else
+            {
+                // No current file path, use Save As dialog
+                FileSaveAs_Click(sender, e);
+            }
+        }
+
+        private async void FileSaveAs_Click(object sender, RoutedEventArgs e)
+        {
+            var canvas = GetCanvasControl();
+            if (canvas == null) return;
+
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = canvas.GetFileDialogFilter(),
+                Title = "Save Image As",
+                FileName = _currentFilePath ?? "Untitled.png"
+            };
+
+            if (saveDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    await canvas.SaveAsync(saveDialog.FileName);
+                    _currentFilePath = saveDialog.FileName;
+                    UpdateWindowTitle();
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+
+        private void UpdateWindowTitle()
+        {
+            var fileName = string.IsNullOrEmpty(_currentFilePath) 
+                ? "Untitled" 
+                : System.IO.Path.GetFileName(_currentFilePath);
+            this.Title = $"MSPaint - {fileName}";
         }
     }
 }

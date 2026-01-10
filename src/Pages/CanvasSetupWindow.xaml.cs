@@ -27,28 +27,45 @@ namespace MSPaint.Pages
             ColorPickerPanel.IsEnabled = TransparentCheckBox.IsChecked != true;
         }
 
-        private void LoadFileButton_Click(object sender, RoutedEventArgs e)
+        private async void LoadFileButton_Click(object sender, RoutedEventArgs e)
         {
+            var ioService = new ProjectIOService();
             var openDialog = new WpfOpenFileDialog
             {
-                Filter = "PNG Files (*.png)|*.png|All Files (*.*)|*.*",
+                Filter = ioService.GetFileDialogFilter(),
                 Title = "Load Canvas from File"
             };
 
             if (openDialog.ShowDialog() == true)
             {
-                var ioService = new ProjectIOService();
-                LoadedGrid = ioService.Load(openDialog.FileName);
-                
-                if (LoadedGrid != null)
+                try
                 {
-                    // Close dialog and return loaded grid
-                    DialogResult = true;
-                    Close();
+                    // Get current settings from UI for PixelSize
+                    var settings = new CanvasSettings
+                    {
+                        Width = int.TryParse(WidthBox.Text, out int w) ? w : 512,
+                        Height = int.TryParse(HeightBox.Text, out int h) ? h : 512,
+                        PixelSize = int.TryParse(PixelSizeBox.Text, out int ps) ? ps : 4,
+                        Background = _selectedColor,
+                        Transparent = TransparentCheckBox.IsChecked == true
+                    };
+
+                    LoadedGrid = await ioService.LoadAsync(openDialog.FileName, settings);
+                    
+                    if (LoadedGrid != null)
+                    {
+                        // Close dialog and return loaded grid
+                        DialogResult = true;
+                        Close();
+                    }
+                    else
+                    {
+                        WpfMessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    WpfMessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

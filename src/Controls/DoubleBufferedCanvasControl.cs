@@ -19,6 +19,7 @@ namespace MSPaint.Controls
         private PixelGrid? _pixelGrid;
         private RenderService _renderService;
         private HistoryService _historyService;
+        private ProjectIOService _projectIOService;
         private ITool? _currentTool;
         private bool _isDrawing;
         private System.Windows.Point _lastMousePosition;
@@ -36,6 +37,7 @@ namespace MSPaint.Controls
             InitializeComponent();
             _renderService = new RenderService();
             _historyService = new HistoryService(maxHistorySize: 50);
+            _projectIOService = new ProjectIOService();
             this.Loaded += DoubleBufferedCanvasControl_Loaded;
             
             // Enable mouse capture for smooth drawing
@@ -241,6 +243,27 @@ namespace MSPaint.Controls
                 _pixelGrid.MarkAllDirty();
                 await RenderAsync(force: true);
             }
+        }
+
+        /// <summary>
+        /// Save current canvas to file (memory-efficient: uses existing cached bitmap)
+        /// </summary>
+        public async Task SaveAsync(string filePath)
+        {
+            if (_cachedBitmap == null)
+            {
+                throw new InvalidOperationException("No bitmap to save. Canvas must be rendered first.");
+            }
+
+            await _projectIOService.SaveAsync(filePath, _cachedBitmap);
+        }
+
+        /// <summary>
+        /// Get file dialog filter for save/load dialogs
+        /// </summary>
+        public string GetFileDialogFilter()
+        {
+            return _projectIOService.GetFileDialogFilter();
         }
 
         private async Task RenderAsync(bool force = false)
