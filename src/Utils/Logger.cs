@@ -43,9 +43,17 @@ namespace MSPaint.Utils
             }
         }
 
-        public static void LogRender(string action, int width, int height, bool force = false)
+        public static void LogRender(string action, int width, int height, bool force = false, int? dirtyWidth = null, int? dirtyHeight = null)
         {
-            Log($"RENDER: {action} | Size: {width}x{height} | Force: {force}");
+            if (dirtyWidth.HasValue && dirtyHeight.HasValue)
+            {
+                double ratio = (dirtyWidth.Value * dirtyHeight.Value) / (double)(width * height) * 100.0;
+                Log($"RENDER: {action} | Size: {width}x{height} | Dirty: {dirtyWidth}x{dirtyHeight} ({ratio:F1}%) | Force: {force}");
+            }
+            else
+            {
+                Log($"RENDER: {action} | Size: {width}x{height} | Force: {force}");
+            }
         }
 
         public static void LogMemory(string action, long? bytes = null)

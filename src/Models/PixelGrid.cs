@@ -1,3 +1,4 @@
+using System;
 using System.Windows.Media;
 using MediaColor = System.Windows.Media.Color;
 
@@ -10,6 +11,14 @@ namespace MSPaint.Models
         public int PixelSize { get; }
 
         private MediaColor[,] _pixels;
+        
+        // Dirty region tracking - only render changed pixels
+        private int _dirtyMinX = int.MaxValue;
+        private int _dirtyMinY = int.MaxValue;
+        private int _dirtyMaxX = int.MinValue;
+        private int _dirtyMaxY = int.MinValue;
+        private bool _isDirty = false;
+        private readonly object _dirtyLock = new object();
 
         public PixelGrid(int width, int height, int pixelSize)
         {
@@ -17,9 +26,75 @@ namespace MSPaint.Models
             Height = height;
             PixelSize = pixelSize;
             _pixels = new MediaColor[width, height];
+            MarkAllDirty(); // Initial state: everything needs rendering
         }
 
         public MediaColor GetPixel(int x, int y) => _pixels[x, y];
-        public void SetPixel(int x, int y, MediaColor c) => _pixels[x, y] = c;
+        
+        public void SetPixel(int x, int y, MediaColor c)
+        {
+            if (x < 0 || x >= Width || y < 0 || y >= Height) return;
+            
+            _pixels[x, y] = c;
+            
+            // Update dirty region
+            lock (_dirtyLock)
+            {
+                _isDirty = true;
+                if (x < _dirtyMinX) _dirtyMinX = x;
+                if (x > _dirtyMaxX) _dirtyMaxX = x;
+                if (y < _dirtyMinY) _dirtyMinY = y;
+                if (y > _dirtyMaxY) _dirtyMaxY = y;
+            }
+        }
+        
+        // Get dirty region and clear it (atomic operation)
+        public bool GetAndClearDirtyRegion(out int minX, out int minY, out int maxX, out int maxY)
+        {
+            lock (_dirtyLock)
+            {
+                if (!_isDirty)
+                {
+                    minX = minY = maxX = maxY = 0;
+                    return false;
+                }
+                
+                minX = _dirtyMinX;
+                minY = _dirtyMinY;
+                maxX = _dirtyMaxX;
+                maxY = _dirtyMaxY;
+                
+                // Clear dirty region
+                _dirtyMinX = int.MaxValue;
+                _dirtyMinY = int.MaxValue;
+                _dirtyMaxX = int.MinValue;
+                _dirtyMaxY = int.MinValue;
+                _isDirty = false;
+                
+                return true;
+            }
+        }
+        
+        // Mark entire grid as dirty (e.g., after initialization or full redraw)
+        public void MarkAllDirty()
+        {
+            lock (_dirtyLock)
+            {
+                _isDirty = true;
+                _dirtyMinX = 0;
+                _dirtyMinY = 0;
+                _dirtyMaxX = Width - 1;
+                _dirtyMaxY = Height - 1;
+            }
+        }
+        
+        // Check if there's a dirty region
+        public bool HasDirtyRegion()
+        {
+            lock (_dirtyLock)
+            {
+                return _isDirty;
+            }
+        }
     }
 }

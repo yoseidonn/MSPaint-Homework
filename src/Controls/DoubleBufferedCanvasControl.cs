@@ -68,6 +68,9 @@ namespace MSPaint.Controls
                     _pixelGrid.SetPixel(x, y, settings.Background);
                 }
             }
+            
+            // Mark all as dirty for initial render
+            _pixelGrid.MarkAllDirty();
 
             // Initialize default tool
             _currentTool = new PencilTool(_pixelGrid);
@@ -89,6 +92,9 @@ namespace MSPaint.Controls
             _cachedBitmap = null;
             _previewBitmap = null;
             _previewBitmapSourceSet = false;
+            
+            // Mark all as dirty for initial render
+            _pixelGrid.MarkAllDirty();
             
             _currentTool = new PencilTool(_pixelGrid);
             await RenderAsync(force: true);
@@ -234,15 +240,23 @@ namespace MSPaint.Controls
                     });
                     bitmapCreated = true;
                     _bitmapSourceSet = false;
-                    // Initial render
-                    await _renderService.UpdateBitmapAsync(_cachedBitmap, _pixelGrid);
-                    Logger.LogRender("Main bitmap created and rendered", width, height, force);
+                    // Initial render - full update for new bitmap
+                    _pixelGrid.MarkAllDirty();
+                    await _renderService.UpdateBitmapFullAsync(_cachedBitmap, _pixelGrid);
+                    Logger.LogRender("Main bitmap created and rendered (full)", width, height, force);
                 }
                 else
                 {
-                    // Update existing bitmap (reuse to prevent memory leak)
-                    await _renderService.UpdateBitmapAsync(_cachedBitmap, _pixelGrid);
-                    Logger.LogRender("Main bitmap updated", width, height, force);
+                    // Update existing bitmap (reuse to prevent memory leak) - only dirty region
+                    var (rendered, dirtyWidth, dirtyHeight) = await _renderService.UpdateBitmapAsync(_cachedBitmap, _pixelGrid);
+                    if (rendered)
+                    {
+                        Logger.LogRender("Main bitmap updated (dirty region)", width, height, force, dirtyWidth, dirtyHeight);
+                    }
+                    else
+                    {
+                        Logger.LogRender("Main bitmap updated (no dirty region)", width, height, force);
+                    }
                 }
 
                 // Handle preview layer if tool uses it
