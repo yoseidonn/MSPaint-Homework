@@ -72,6 +72,7 @@
                     <Separator Margin="0,6"/>
                     <Button x:Name="RectangleButton" Content="Rectangle" Width="60" Height="30" Margin="0,2" Click="RectangleButton_Click" FontSize="10"/>
                     <Button x:Name="EllipseButton" Content="Ellipse" Width="60" Height="30" Margin="0,2" Click="EllipseButton_Click" FontSize="10"/>
+                    <Button x:Name="TextButton" Content="Text" Width="60" Height="30" Margin="0,2" Click="TextButton_Click" FontSize="10"/>
                 </StackPanel>
             </Border>
 

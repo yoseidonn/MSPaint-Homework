@@ -1,0 +1,69 @@
+<Window x:Class="MSPaint.Pages.TextInputDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Enter Text" Height="300" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Text Input Label -->
+        <Label Grid.Row="0" Content="Text:" FontWeight="Bold" Margin="0,0,0,5"/>
+
+        <!-- Text Input Box -->
+        <TextBox x:Name="TextInputBox" Grid.Row="1" 
+                 TextWrapping="Wrap" AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto"
+                 FontFamily="Consolas"
+                 FontSize="12"
+                 Margin="0,0,0,10"
+                 TextChanged="TextInputBox_TextChanged"/>
+
+        <!-- Font Size Label -->
+        <Label Grid.Row="2" Content="Font Size:" FontWeight="Bold" Margin="0,5,0,5"/>
+
+        <!-- Font Size Controls -->
+        <Grid Grid.Row="3" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Slider x:Name="FontSizeSlider" Grid.Column="0"
+                    Minimum="1" Maximum="50" Value="12"
+                    TickFrequency="1" IsSnapToTickEnabled="True"
+                    ValueChanged="FontSizeSlider_ValueChanged"
+                    VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <Label x:Name="FontSizeLabel" Grid.Column="1"
+                   Content="12" MinWidth="30"
+                   VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Preview Label -->
+        <Label Grid.Row="4" Content="Preview:" FontWeight="Bold" Margin="0,5,0,5"/>
+        <Border Grid.Row="4" BorderBrush="Gray" BorderThickness="1" 
+                Background="White" Padding="5" Margin="0,25,0,10" Height="60">
+            <TextBlock x:Name="PreviewTextBlock" 
+                       Text="Sample Text"
+                       FontFamily="Consolas"
+                       FontSize="12"
+                       Foreground="Black"
+                       VerticalAlignment="Center"/>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="5" Orientation="Horizontal" 
+                    HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button Content="OK" Width="75" Height="25" Margin="5,0"
+                    Click="OKButton_Click" IsDefault="True"/>
+            <Button Content="Cancel" Width="75" Height="25" Margin="5,0"
+                    Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

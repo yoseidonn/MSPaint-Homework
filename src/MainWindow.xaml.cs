@@ -93,6 +93,7 @@ namespace MSPaint
             PencilButton.Background = new SolidColorBrush(MediaColors.Transparent);
             RectangleButton.Background = new SolidColorBrush(MediaColors.Transparent);
             EllipseButton.Background = new SolidColorBrush(MediaColors.Transparent);
+            TextButton.Background = new SolidColorBrush(MediaColors.Transparent);
 
             // Highlight selected button
             if (button != null)
@@ -118,6 +119,8 @@ namespace MSPaint
                 ellipseTool.DrawColor = color;
             else if (currentTool is FillTool fillTool)
                 fillTool.FillColor = color;
+            else if (currentTool is TextTool textTool)
+                textTool.DrawColor = color;
         }
 
         // Tool selection handlers
@@ -178,6 +181,19 @@ namespace MSPaint
                 tool.DrawColor = _primaryColor;
                 SetTool(tool);
                 HighlightToolButton(EllipseButton);
+            }
+        }
+
+        private void TextButton_Click(object sender, RoutedEventArgs e)
+        {
+            var canvas = GetCanvasControl();
+            if (canvas?.PixelGrid != null)
+            {
+                var tool = new TextTool(canvas.PixelGrid);
+                tool.DrawColor = _primaryColor;
+                tool.FontSize = 12; // Default font size
+                SetTool(tool);
+                HighlightToolButton(TextButton);
             }
         }
 
