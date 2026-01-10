@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>MSPaint</RootNamespace>
+    <AssemblyName>MSPaint</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Page Include="App.xaml" />
+    <Page Include="MainWindow.xaml" />
+    <Page Include="Pages\CanvasSetupWindow.xaml" />
+    <Page Include="Pages\DrawingPage.xaml" />
+    <Compile Include="App.xaml.cs" />
+    <Compile Include="MainWindow.xaml.cs" />
+    <Compile Include="Pages\CanvasSetupWindow.xaml.cs" />
+    <Compile Include="Pages\DrawingPage.xaml.cs" />
+
+    <Compile Include="Controls\DoubleBufferedCanvasControl.xaml.cs" />
+    <Page Include="Controls\DoubleBufferedCanvasControl.xaml" />
+
+    <Compile Include="Models\PixelGrid.cs" />
+    <Compile Include="Models\CanvasSettings.cs" />
+
+    <Compile Include="Services\DrawingService.cs" />
+    <Compile Include="Services\RenderService.cs" />
+    <Compile Include="Services\ProjectIOService.cs" />
+
+    <Compile Include="Tools\ITool.cs" />
+    <Compile Include="Tools\BaseTool.cs" />
+    <Compile Include="Tools\PencilTool.cs" />
+    <Compile Include="Tools\RectangleTool.cs" />
+    <Compile Include="Tools\EllipseTool.cs" />
+    <Compile Include="Tools\FillTool.cs" />
+    <Compile Include="Tools\EraserTool.cs" />
+
+    <Compile Include="ViewModels\MainViewModel.cs" />
+    <Compile Include="ViewModels\DrawingPageViewModel.cs" />
+    <Compile Include="ViewModels\CanvasSetupViewModel.cs" />
+
+    <Compile Include="Utils\AsyncHelpers.cs" />
+    <Compile Include="Utils\GeometryUtils.cs" />
+
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Resources\Readme.txt" />
+  </ItemGroup>
+</Project>

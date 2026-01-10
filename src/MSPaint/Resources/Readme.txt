@@ -1,0 +1,1 @@
+This folder can contain icons, resource dictionaries, and other shared resources for the MSPaint demo.
