@@ -58,38 +58,13 @@
             <!-- Left vertical toolbar -->
             <Border Grid.Column="0" Background="#FFF0EFEF" BorderBrush="#FFDADADA" BorderThickness="1" Padding="6">
                 <StackPanel>
-                    <!-- Tool buttons: basit sekiller ile gösterim -->
-                    <Button ToolTip="Select" Width="40" Height="40" Margin="0,2">
-                        <Viewbox>
-                            <Path Data="M2,2 L18,18 M18,2 L2,18" Stroke="Black" StrokeThickness="2"/>
-                        </Viewbox>
-                    </Button>
-                    <Button x:Name="EraserButton" ToolTip="Eraser" Width="40" Height="40" Margin="0,2" Click="EraserButton_Click">
-                        <Viewbox>
-                            <Rectangle Width="14" Height="10" Fill="#FFDDDDDD" Stroke="Black"/>
-                        </Viewbox>
-                    </Button>
-                    <Button x:Name="FillButton" ToolTip="Fill" Width="40" Height="40" Margin="0,2" Click="FillButton_Click">
-                        <Viewbox>
-                            <Ellipse Width="14" Height="14" Fill="Black"/>
-                        </Viewbox>
-                    </Button>
-                    <Button x:Name="PencilButton" ToolTip="Pencil" Width="40" Height="40" Margin="0,2" Click="PencilButton_Click">
-                        <Viewbox>
-                            <Path Data="M2,14 L6,10 L14,18 L10,22 Z" Fill="Black"/>
-                        </Viewbox>
-                    </Button>
+                    <!-- Tool buttons: text only -->
+                    <Button x:Name="EraserButton" Content="Eraser" Width="60" Height="30" Margin="0,2" Click="EraserButton_Click" FontSize="10"/>
+                    <Button x:Name="FillButton" Content="Fill" Width="60" Height="30" Margin="0,2" Click="FillButton_Click" FontSize="10"/>
+                    <Button x:Name="PencilButton" Content="Pencil" Width="60" Height="30" Margin="0,2" Click="PencilButton_Click" FontSize="10"/>
                     <Separator Margin="0,6"/>
-                    <Button x:Name="RectangleButton" ToolTip="Rectangle" Width="40" Height="40" Margin="0,2" Click="RectangleButton_Click">
-                        <Viewbox>
-                            <Rectangle Width="14" Height="10" Stroke="Black" Fill="Transparent"/>
-                        </Viewbox>
-                    </Button>
-                    <Button x:Name="EllipseButton" ToolTip="Ellipse" Width="40" Height="40" Margin="0,2" Click="EllipseButton_Click">
-                        <Viewbox>
-                            <Ellipse Width="14" Height="10" Stroke="Black" Fill="Transparent"/>
-                        </Viewbox>
-                    </Button>
+                    <Button x:Name="RectangleButton" Content="Rectangle" Width="60" Height="30" Margin="0,2" Click="RectangleButton_Click" FontSize="10"/>
+                    <Button x:Name="EllipseButton" Content="Ellipse" Width="60" Height="30" Margin="0,2" Click="EllipseButton_Click" FontSize="10"/>
                 </StackPanel>
             </Border>
 

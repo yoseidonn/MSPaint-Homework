@@ -1,3 +1,4 @@
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -19,16 +20,53 @@ namespace MSPaint
 
         public MainWindow()
         {
-            InitializeComponent();
+            try
+            {
+                InitializeComponent();
 
-            // At startup we mount the drawing page control into the CanvasHost
-            _drawingPage = new Pages.DrawingPage();
-            CanvasHost.Content = _drawingPage;
+                // At startup we mount the drawing page control into the CanvasHost
+                _drawingPage = new Pages.DrawingPage();
+                CanvasHost.Content = _drawingPage;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    $"Error initializing MainWindow: {ex.Message}\n\n{ex.StackTrace}",
+                    "Initialization Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                throw; // Re-throw to let App.xaml.cs handle it
+            }
         }
 
         public Pages.DrawingPage? GetDrawingPage()
         {
             return _drawingPage;
+        }
+
+        public async System.Threading.Tasks.Task InitializeCanvasAsync(Pages.CanvasSetupWindow setupWindow)
+        {
+            // Wait for window to be fully rendered
+            await System.Threading.Tasks.Task.Delay(100);
+            
+            if (setupWindow.LoadedGrid != null)
+            {
+                // Load from file
+                var page = GetDrawingPage();
+                if (page != null)
+                {
+                    await page.InitializeCanvas(setupWindow.LoadedGrid);
+                }
+            }
+            else if (setupWindow.Result != null)
+            {
+                // Create new canvas with settings
+                var page = GetDrawingPage();
+                if (page != null)
+                {
+                    await page.InitializeCanvas(setupWindow.Result);
+                }
+            }
         }
 
         private MSPaint.Controls.DoubleBufferedCanvasControl? GetCanvasControl()

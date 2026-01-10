@@ -11,43 +11,95 @@ namespace MSPaint
         {
             base.OnStartup(e);
             
-            // Handle unhandled exceptions
+            // Set shutdown mode to explicit (don't close when last window closes)
+            this.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            
+            // Handle unhandled exceptions FIRST, before anything else
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             
-            // Show canvas setup window first
-            var setupWindow = new Pages.CanvasSetupWindow();
-            if (setupWindow.ShowDialog() == true)
+            // Also handle TaskScheduler unobserved exceptions
+            System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (s, args) =>
             {
-                // Create and show the main window
-                var mainWindow = new MainWindow();
+                WpfMessageBox.Show(
+                    $"Unobserved task exception: {args.Exception.Message}",
+                    "Task Exception",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                args.SetObserved();
+            };
+            
+            try
+            {
+                // Show canvas setup window first
+                var setupWindow = new Pages.CanvasSetupWindow();
+                bool? dialogResult = setupWindow.ShowDialog();
                 
-                // Initialize canvas based on setup result
-                if (setupWindow.LoadedGrid != null)
+                if (dialogResult == true)
                 {
-                    // Load from file
-                    var page = mainWindow.GetDrawingPage();
-                    if (page != null)
+                    // Create and show the main window first
+                    MainWindow? mainWindow = null;
+                    try
                     {
-                        page.InitializeCanvas(setupWindow.LoadedGrid).Wait();
+                        mainWindow = new MainWindow();
+                        mainWindow.Show();
+                        
+                        // Use async method to initialize canvas after a short delay
+                        // This ensures the window is fully rendered
+                        // Fire and forget - we don't need to wait for it
+                        System.Threading.Tasks.Task.Run(async () =>
+                        {
+                            await System.Threading.Tasks.Task.Delay(200);
+                            await this.Dispatcher.InvokeAsync(async () =>
+                            {
+                                await InitializeCanvasAfterDelay(mainWindow, setupWindow);
+                            });
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        WpfMessageBox.Show(
+                            $"Error creating main window: {ex.Message}\n\n{ex.StackTrace}",
+                            "Window Creation Error",
+                            MessageBoxButton.OK,
+                            MessageBoxImage.Error);
+                        Shutdown();
+                        return;
                     }
                 }
-                else if (setupWindow.Result != null)
+                else
                 {
-                    // Create new canvas with settings
-                    var page = mainWindow.GetDrawingPage();
-                    if (page != null)
-                    {
-                        page.InitializeCanvas(setupWindow.Result).Wait();
-                    }
+                    // User cancelled, exit application
+                    Shutdown();
                 }
-                
-                mainWindow.Show();
             }
-            else
+            catch (Exception ex)
             {
-                // User cancelled, exit application
+                WpfMessageBox.Show(
+                    $"Fatal startup error: {ex.Message}\n\n{ex.StackTrace}",
+                    "Startup Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 Shutdown();
+            }
+        }
+
+        private async System.Threading.Tasks.Task InitializeCanvasAfterDelay(MainWindow mainWindow, Pages.CanvasSetupWindow setupWindow)
+        {
+            try
+            {
+                // Wait a bit for window to be fully rendered
+                await System.Threading.Tasks.Task.Delay(200);
+                
+                await mainWindow.InitializeCanvasAsync(setupWindow);
+            }
+            catch (Exception ex)
+            {
+                WpfMessageBox.Show(
+                    $"Error initializing canvas: {ex.Message}\n\n{ex.StackTrace}",
+                    "Initialization Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
