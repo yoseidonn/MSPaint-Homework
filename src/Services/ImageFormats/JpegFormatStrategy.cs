@@ -37,13 +37,21 @@ namespace MSPaint.Services.ImageFormats
 
             // WriteableBitmap must be accessed on UI thread
             // Flatten alpha channel and create frozen copy on UI thread
+            // IMPORTANT: Ensure original bitmap is NOT frozen - only the copy should be frozen
             BitmapSource? rgbBitmap = null;
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                // Check if bitmap is frozen (should never be for WriteableBitmap, but safety check)
+                if (bitmap.IsFrozen)
+                {
+                    throw new InvalidOperationException("Cannot save frozen WriteableBitmap. Bitmap must be editable.");
+                }
+
                 // JPEG doesn't support alpha channel, so we need to flatten it
                 // Convert to RGB format (flatten alpha to white background)
+                // FlattenAlphaChannel creates a NEW WriteableBitmap and freezes it, original remains unfrozen and editable
                 var flattened = FlattenAlphaChannel(bitmap);
-                rgbBitmap = flattened; // Already frozen in FlattenAlphaChannel
+                rgbBitmap = flattened; // Already frozen in FlattenAlphaChannel, original bitmap remains editable
             });
 
             if (rgbBitmap == null) throw new InvalidOperationException("Failed to create flattened bitmap");

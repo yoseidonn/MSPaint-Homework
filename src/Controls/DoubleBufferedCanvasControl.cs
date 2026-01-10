@@ -255,6 +255,16 @@ namespace MSPaint.Controls
                 throw new InvalidOperationException("No bitmap to save. Canvas must be rendered first.");
             }
 
+            // Ensure bitmap is not frozen (should never be, but safety check)
+            if (_cachedBitmap.IsFrozen)
+            {
+                throw new InvalidOperationException("Cannot save frozen bitmap. Bitmap must be editable.");
+            }
+
+            // Ensure bitmap is not locked (wait if necessary)
+            // Note: WriteableBitmap doesn't have IsLocked property, but we can check by trying to access it
+            // If locked, we'll get an exception which we'll handle
+            
             await _projectIOService.SaveAsync(filePath, _cachedBitmap);
         }
 

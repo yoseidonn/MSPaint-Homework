@@ -25,12 +25,21 @@ namespace MSPaint.Services.ImageFormats
 
             // WriteableBitmap must be accessed on UI thread
             // Create a frozen copy that can be used on background thread
+            // IMPORTANT: Ensure original bitmap is NOT frozen - only the copy should be frozen
             BitmapSource? frozenBitmap = null;
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
+                // Check if bitmap is frozen (should never be for WriteableBitmap, but safety check)
+                if (bitmap.IsFrozen)
+                {
+                    throw new InvalidOperationException("Cannot save frozen WriteableBitmap. Bitmap must be editable.");
+                }
+
                 // Create a frozen copy of the bitmap (thread-safe)
+                // FormatConvertedBitmap creates a NEW BitmapSource, original WriteableBitmap remains unfrozen and editable
+                // The original bitmap is NOT modified or frozen - only the converted copy is frozen
                 var converted = new FormatConvertedBitmap(bitmap, System.Windows.Media.PixelFormats.Pbgra32, null, 0);
-                converted.Freeze();
+                converted.Freeze(); // Only freeze the copy, original WriteableBitmap remains editable
                 frozenBitmap = converted;
             });
 

@@ -310,8 +310,9 @@ namespace MSPaint
             var setupWindow = new Pages.CanvasSetupWindow();
             if (setupWindow.ShowDialog() == true)
             {
-                _currentFilePath = null; // Reset current file path
+                _currentFilePath = null; // Reset current file path for new canvas
                 _ = InitializeCanvasAsync(setupWindow);
+                UpdateWindowTitle(); // Update title to show "Untitled"
             }
         }
 
@@ -356,7 +357,7 @@ namespace MSPaint
             var canvas = GetCanvasControl();
             if (canvas == null) return;
 
-            // If we have a current file path, save to it
+            // If we have a current file path, save to it directly
             if (!string.IsNullOrEmpty(_currentFilePath))
             {
                 try
@@ -372,6 +373,7 @@ namespace MSPaint
             else
             {
                 // No current file path, use Save As dialog
+                // After Save As, _currentFilePath will be set, so next Save will use it
                 FileSaveAs_Click(sender, e);
             }
         }
