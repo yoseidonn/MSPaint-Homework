@@ -14,21 +14,33 @@ namespace MSPaint.Pages
         public TextInputDialog(int initialFontSize = 12)
         {
             InitializeComponent();
+            // Set value after InitializeComponent to avoid triggering ValueChanged before controls are ready
             FontSizeSlider.Value = initialFontSize;
             UpdatePreview();
-            TextInputBox.Focus();
+            TextInputBox?.Focus();
         }
 
         private void FontSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            FontSizeLabel.Content = ((int)e.NewValue).ToString();
+            // Null check: FontSizeLabel might not be initialized yet during InitializeComponent
+            if (FontSizeLabel != null)
+            {
+                FontSizeLabel.Content = ((int)e.NewValue).ToString();
+            }
             UpdatePreview();
         }
 
         private void UpdatePreview()
         {
-            PreviewTextBlock.FontSize = FontSizeSlider.Value;
-            PreviewTextBlock.Text = string.IsNullOrWhiteSpace(TextInputBox.Text) ? "Sample Text" : TextInputBox.Text;
+            // Null checks: Controls might not be initialized yet
+            if (PreviewTextBlock != null && FontSizeSlider != null)
+            {
+                PreviewTextBlock.FontSize = FontSizeSlider.Value;
+            }
+            if (PreviewTextBlock != null && TextInputBox != null)
+            {
+                PreviewTextBlock.Text = string.IsNullOrWhiteSpace(TextInputBox.Text) ? "Sample Text" : TextInputBox.Text;
+            }
         }
 
         private void TextInputBox_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
