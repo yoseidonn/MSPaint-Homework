@@ -138,6 +138,7 @@ namespace MSPaint.Services.ImageFormats
 
         /// <summary>
         /// Flatten alpha channel to white background (for JPEG export)
+        /// Copies pixel data first to avoid locked bitmap issues
         /// </summary>
         private BitmapSource FlattenAlphaChannel(WriteableBitmap bitmap)
         {
@@ -145,21 +146,39 @@ namespace MSPaint.Services.ImageFormats
             var height = bitmap.PixelHeight;
             var stride = bitmap.BackBufferStride;
             var bytesPerPixel = 4; // BGRA
+            int totalBytes = stride * height;
+
+            // First, copy pixel data from source bitmap (lock/unlock to avoid conflicts)
+            byte[] sourcePixelData = new byte[totalBytes];
+            bitmap.Lock();
+            try
+            {
+                unsafe
+                {
+                    byte* sourceBuffer = (byte*)bitmap.BackBuffer;
+                    System.Runtime.InteropServices.Marshal.Copy((System.IntPtr)sourceBuffer, sourcePixelData, 0, totalBytes);
+                }
+            }
+            finally
+            {
+                bitmap.Unlock();
+            }
 
             // Create new RGB bitmap (no alpha)
             var rgbBitmap = new WriteableBitmap(
                 width, height, 96, 96,
                 System.Windows.Media.PixelFormats.Bgr24, null);
 
-            rgbBitmap.Lock();
-            try
-            {
-                unsafe
-                {
-                    byte* sourceBuffer = (byte*)bitmap.BackBuffer;
-                    byte* destBuffer = (byte*)rgbBitmap.BackBuffer;
-                    int destStride = rgbBitmap.BackBufferStride;
+            int destStride = rgbBitmap.BackBufferStride;
+            int destTotalBytes = destStride * height;
+            byte[] destPixelData = new byte[destTotalBytes];
 
+            // Process pixel data (flatten alpha to white background)
+            unsafe
+            {
+                fixed (byte* sourcePtr = sourcePixelData)
+                fixed (byte* destPtr = destPixelData)
+                {
                     for (int y = 0; y < height; y++)
                     {
                         for (int x = 0; x < width; x++)
@@ -167,10 +186,10 @@ namespace MSPaint.Services.ImageFormats
                             int sourceOffset = y * stride + x * bytesPerPixel;
                             int destOffset = y * destStride + x * 3; // 3 bytes per pixel (BGR)
 
-                            byte b = sourceBuffer[sourceOffset];
-                            byte g = sourceBuffer[sourceOffset + 1];
-                            byte r = sourceBuffer[sourceOffset + 2];
-                            byte a = sourceBuffer[sourceOffset + 3];
+                            byte b = sourcePtr[sourceOffset];
+                            byte g = sourcePtr[sourceOffset + 1];
+                            byte r = sourcePtr[sourceOffset + 2];
+                            byte a = sourcePtr[sourceOffset + 3];
 
                             // Alpha compositing: blend with white background
                             // result = source * (alpha/255) + white * (1 - alpha/255)
@@ -181,13 +200,23 @@ namespace MSPaint.Services.ImageFormats
                             byte finalG = (byte)(g * alphaFactor + 255 * invAlphaFactor);
                             byte finalB = (byte)(b * alphaFactor + 255 * invAlphaFactor);
 
-                            destBuffer[destOffset] = finalB;
-                            destBuffer[destOffset + 1] = finalG;
-                            destBuffer[destOffset + 2] = finalR;
+                            destPtr[destOffset] = finalB;
+                            destPtr[destOffset + 1] = finalG;
+                            destPtr[destOffset + 2] = finalR;
                         }
                     }
                 }
+            }
 
+            // Copy processed data to destination bitmap
+            rgbBitmap.Lock();
+            try
+            {
+                unsafe
+                {
+                    byte* destBuffer = (byte*)rgbBitmap.BackBuffer;
+                    System.Runtime.InteropServices.Marshal.Copy(destPixelData, 0, (System.IntPtr)destBuffer, destTotalBytes);
+                }
                 rgbBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
             }
             finally

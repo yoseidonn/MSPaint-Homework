@@ -25,7 +25,7 @@ namespace MSPaint.Services.ImageFormats
 
             // WriteableBitmap must be accessed on UI thread
             // Create a frozen copy that can be used on background thread
-            // IMPORTANT: Ensure original bitmap is NOT frozen - only the copy should be frozen
+            // IMPORTANT: Copy pixel data directly to avoid locked bitmap issues
             BitmapSource? frozenBitmap = null;
             await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
             {
@@ -35,11 +35,50 @@ namespace MSPaint.Services.ImageFormats
                     throw new InvalidOperationException("Cannot save frozen WriteableBitmap. Bitmap must be editable.");
                 }
 
-                // Create a frozen copy of the bitmap (thread-safe)
-                // FormatConvertedBitmap creates a NEW BitmapSource, original WriteableBitmap remains unfrozen and editable
-                // The original bitmap is NOT modified or frozen - only the converted copy is frozen
-                var converted = new FormatConvertedBitmap(bitmap, System.Windows.Media.PixelFormats.Pbgra32, null, 0);
-                converted.Freeze(); // Only freeze the copy, original WriteableBitmap remains editable
+                // Copy pixel data directly to create a new frozen BitmapSource
+                // This avoids issues with locked bitmaps during FormatConvertedBitmap creation
+                int width = bitmap.PixelWidth;
+                int height = bitmap.PixelHeight;
+                int stride = bitmap.BackBufferStride;
+                int totalBytes = stride * height;
+
+                byte[] pixelData = new byte[totalBytes];
+                
+                // Lock bitmap to copy pixel data
+                bitmap.Lock();
+                try
+                {
+                    unsafe
+                    {
+                        byte* sourceBuffer = (byte*)bitmap.BackBuffer;
+                        System.Runtime.InteropServices.Marshal.Copy((System.IntPtr)sourceBuffer, pixelData, 0, totalBytes);
+                    }
+                }
+                finally
+                {
+                    bitmap.Unlock();
+                }
+
+                // Create new WriteableBitmap from copied pixel data
+                var copiedBitmap = new WriteableBitmap(width, height, 96, 96, System.Windows.Media.PixelFormats.Pbgra32, null);
+                copiedBitmap.Lock();
+                try
+                {
+                    unsafe
+                    {
+                        byte* destBuffer = (byte*)copiedBitmap.BackBuffer;
+                        System.Runtime.InteropServices.Marshal.Copy(pixelData, 0, (System.IntPtr)destBuffer, totalBytes);
+                    }
+                    copiedBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+                }
+                finally
+                {
+                    copiedBitmap.Unlock();
+                }
+
+                // Convert to frozen BitmapSource for thread-safe access
+                var converted = new FormatConvertedBitmap(copiedBitmap, System.Windows.Media.PixelFormats.Pbgra32, null, 0);
+                converted.Freeze(); // Freeze the copy, original bitmap remains editable
                 frozenBitmap = converted;
             });
 

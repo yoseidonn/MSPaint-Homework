@@ -12,9 +12,11 @@
 
 ## What Had Done to Solve
 1. **Bitmap Freezing Fix**: Ensure we never freeze the original `_cachedBitmap` - only create frozen copies for encoding
-   - `FormatConvertedBitmap` creates a NEW BitmapSource, original `WriteableBitmap` remains unfrozen and editable
-   - Only the converted copy is frozen, original bitmap is never modified
-   - Added `IsFrozen` check before creating frozen copy to prevent saving already-frozen bitmaps
+   - Changed approach: Instead of using `FormatConvertedBitmap` directly on potentially locked bitmap, copy pixel data first
+   - **PNG Strategy**: Lock bitmap, copy pixel data to byte array, unlock, create new WriteableBitmap from copied data, then convert to frozen BitmapSource
+   - **JPEG Strategy**: Same approach for `FlattenAlphaChannel` - copy source pixel data first, process in memory, then create new bitmap
+   - This avoids "IsFrozen" errors when bitmap is locked during render operations (mouse movement)
+   - Original bitmap remains unfrozen and editable throughout the process
 2. **Save Logic Fix**: Update `_currentFilePath` after Save As, and ensure Save (Ctrl+S) uses existing path if available
    - `FileSave_Click` now properly checks `_currentFilePath` and saves directly without dialog
    - `FileSaveAs_Click` sets `_currentFilePath` after successful save
@@ -23,9 +25,11 @@
    - `FileNew_Click` resets `_currentFilePath` to null for new canvas
 
 ## How Did It Effect
-- Canvas remains editable after saving files
+- Canvas remains editable after saving files (no frozen bitmap errors)
+- Save operations work correctly even when bitmap is locked during render (mouse movement)
 - Save (Ctrl+S) saves to current file without dialog
 - Save As still works for choosing new location
+- Pixel data copying approach ensures thread-safety and avoids locked bitmap conflicts
 
 **Files Modified:**
 - `src/Services/ImageFormats/PngFormatStrategy.cs`
