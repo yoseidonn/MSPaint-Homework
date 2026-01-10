@@ -23,8 +23,10 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <!-- Primary/secondary color previews -->
                     <StackPanel Orientation="Vertical" Margin="4" Width="40" HorizontalAlignment="Left">
-                        <Border Background="Black" Height="20" BorderBrush="Gray" BorderThickness="1"/>
-                        <Border Background="White" Height="20" BorderBrush="Gray" BorderThickness="1" Margin="0,2,0,0"/>
+                        <Border x:Name="PrimaryColorPreview" Background="Black" Height="20" BorderBrush="Gray" BorderThickness="1" 
+                                MouseLeftButtonDown="PrimaryColorPreview_MouseLeftButtonDown" Cursor="Hand"/>
+                        <Border x:Name="SecondaryColorPreview" Background="White" Height="20" BorderBrush="Gray" BorderThickness="1" Margin="0,2,0,0"
+                                MouseLeftButtonDown="SecondaryColorPreview_MouseLeftButtonDown" Cursor="Hand"/>
                     </StackPanel>
 
                     <!-- Color swatches -->
@@ -34,13 +36,13 @@
                                 <StackPanel Orientation="Horizontal"/>
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
-                        <Button Width="18" Height="18" Margin="3" Background="Black"/>
-                        <Button Width="18" Height="18" Margin="3" Background="Gray"/>
-                        <Button Width="18" Height="18" Margin="3" Background="White"/>
-                        <Button Width="18" Height="18" Margin="3" Background="Red"/>
-                        <Button Width="18" Height="18" Margin="3" Background="Lime"/>
-                        <Button Width="18" Height="18" Margin="3" Background="Cyan"/>
-                        <Button Width="18" Height="18" Margin="3" Background="Blue"/>
+                        <Button Width="18" Height="18" Margin="3" Background="Black" Click="ColorSwatch_Click" Tag="Black"/>
+                        <Button Width="18" Height="18" Margin="3" Background="Gray" Click="ColorSwatch_Click" Tag="Gray"/>
+                        <Button Width="18" Height="18" Margin="3" Background="White" Click="ColorSwatch_Click" Tag="White"/>
+                        <Button Width="18" Height="18" Margin="3" Background="Red" Click="ColorSwatch_Click" Tag="Red"/>
+                        <Button Width="18" Height="18" Margin="3" Background="Lime" Click="ColorSwatch_Click" Tag="Lime"/>
+                        <Button Width="18" Height="18" Margin="3" Background="Cyan" Click="ColorSwatch_Click" Tag="Cyan"/>
+                        <Button Width="18" Height="18" Margin="3" Background="Blue" Click="ColorSwatch_Click" Tag="Blue"/>
                     </ItemsControl>
                 </StackPanel>
             </ScrollViewer>
@@ -62,33 +64,28 @@
                             <Path Data="M2,2 L18,18 M18,2 L2,18" Stroke="Black" StrokeThickness="2"/>
                         </Viewbox>
                     </Button>
-                    <Button ToolTip="Eraser" Width="40" Height="40" Margin="0,2">
+                    <Button x:Name="EraserButton" ToolTip="Eraser" Width="40" Height="40" Margin="0,2" Click="EraserButton_Click">
                         <Viewbox>
                             <Rectangle Width="14" Height="10" Fill="#FFDDDDDD" Stroke="Black"/>
                         </Viewbox>
                     </Button>
-                    <Button ToolTip="Fill" Width="40" Height="40" Margin="0,2">
+                    <Button x:Name="FillButton" ToolTip="Fill" Width="40" Height="40" Margin="0,2" Click="FillButton_Click">
                         <Viewbox>
                             <Ellipse Width="14" Height="14" Fill="Black"/>
                         </Viewbox>
                     </Button>
-                    <Button ToolTip="Pencil" Width="40" Height="40" Margin="0,2">
+                    <Button x:Name="PencilButton" ToolTip="Pencil" Width="40" Height="40" Margin="0,2" Click="PencilButton_Click">
                         <Viewbox>
                             <Path Data="M2,14 L6,10 L14,18 L10,22 Z" Fill="Black"/>
                         </Viewbox>
                     </Button>
                     <Separator Margin="0,6"/>
-                    <Button ToolTip="Line" Width="40" Height="40" Margin="0,2">
-                        <Viewbox>
-                            <Path Data="M2,18 L18,6" Stroke="Black" StrokeThickness="2"/>
-                        </Viewbox>
-                    </Button>
-                    <Button ToolTip="Rectangle" Width="40" Height="40" Margin="0,2">
+                    <Button x:Name="RectangleButton" ToolTip="Rectangle" Width="40" Height="40" Margin="0,2" Click="RectangleButton_Click">
                         <Viewbox>
                             <Rectangle Width="14" Height="10" Stroke="Black" Fill="Transparent"/>
                         </Viewbox>
                     </Button>
-                    <Button ToolTip="Ellipse" Width="40" Height="40" Margin="0,2">
+                    <Button x:Name="EllipseButton" ToolTip="Ellipse" Width="40" Height="40" Margin="0,2" Click="EllipseButton_Click">
                         <Viewbox>
                             <Ellipse Width="14" Height="10" Stroke="Black" Fill="Transparent"/>
                         </Viewbox>

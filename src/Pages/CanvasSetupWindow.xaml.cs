@@ -4,6 +4,8 @@ using Microsoft.Win32;
 using MSPaint.Models;
 using MSPaint.Services;
 using MediaColor = System.Windows.Media.Color;
+using WpfMessageBox = System.Windows.MessageBox;
+using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
 
 namespace MSPaint.Pages
 {
@@ -27,7 +29,7 @@ namespace MSPaint.Pages
 
         private void LoadFileButton_Click(object sender, RoutedEventArgs e)
         {
-            var openDialog = new OpenFileDialog
+            var openDialog = new WpfOpenFileDialog
             {
                 Filter = "PNG Files (*.png)|*.png|All Files (*.*)|*.*",
                 Title = "Load Canvas from File"
@@ -46,7 +48,7 @@ namespace MSPaint.Pages
                 }
                 else
                 {
-                    MessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -114,7 +116,7 @@ namespace MSPaint.Pages
             }
             else
             {
-                MessageBox.Show("Please enter valid numbers for width, height, and pixel size.", 
+                WpfMessageBox.Show("Please enter valid numbers for width, height, and pixel size.", 
                     "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }

@@ -38,6 +38,11 @@ namespace MSPaint.Controls
             _currentTool = tool;
         }
 
+        public ITool? GetCurrentTool()
+        {
+            return _currentTool;
+        }
+
         public async Task InitializeCanvas(CanvasSettings settings)
         {
             _pixelGrid = new PixelGrid(settings.Width, settings.Height, settings.PixelSize);
@@ -152,7 +157,7 @@ namespace MSPaint.Controls
                 var bitmap = await _renderService.RenderAsync(_pixelGrid);
                 
                 // Update UI on UI thread
-                await WpfApplication.Current.Dispatcher.InvokeAsync(() =>
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     BackImage.Source = bitmap;
                 });

@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using WpfApplication = System.Windows.Application;
+using WpfMessageBox = System.Windows.MessageBox;
 
 namespace MSPaint
 {
@@ -53,7 +54,7 @@ namespace MSPaint
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             string errorMessage = $"An unhandled exception occurred:\n\n{e.Exception}\n\nStack Trace:\n{e.Exception.StackTrace}";
-            MessageBox.Show(errorMessage, "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            WpfMessageBox.Show(errorMessage, "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true; // Prevent app from crashing
         }
 
@@ -62,7 +63,7 @@ namespace MSPaint
             if (e.ExceptionObject is Exception ex)
             {
                 string errorMessage = $"A fatal exception occurred:\n\n{ex}\n\nStack Trace:\n{ex.StackTrace}";
-                MessageBox.Show(errorMessage, "Fatal Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                WpfMessageBox.Show(errorMessage, "Fatal Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }
