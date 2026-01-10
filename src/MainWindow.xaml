@@ -69,10 +69,11 @@
             </Border>
 
             <!-- Drawing area with scrollbars -->
-            <Border Grid.Column="1" Margin="8" BorderBrush="Gray" BorderThickness="1" Background="White">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Border Grid.Column="1" Margin="8" BorderBrush="Gray" BorderThickness="1" Background="#FFE0E0E0">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                              HorizontalContentAlignment="Left" VerticalContentAlignment="Top">
                     <!-- Canvas placeholder: replaced at runtime with DoubleBufferedCanvasControl -->
-                    <ContentControl x:Name="CanvasHost"/>
+                    <ContentControl x:Name="CanvasHost" HorizontalAlignment="Left" VerticalAlignment="Top"/>
                 </ScrollViewer>
             </Border>
         </Grid>

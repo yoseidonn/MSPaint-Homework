@@ -17,6 +17,7 @@ namespace MSPaint
         private Pages.DrawingPage? _drawingPage;
         private MediaColor _primaryColor = MediaColors.Black;
         private MediaColor _secondaryColor = MediaColors.White;
+        private System.Windows.Controls.Button? _selectedToolButton;
 
         public MainWindow()
         {
@@ -83,6 +84,23 @@ namespace MSPaint
             }
         }
 
+        private void HighlightToolButton(System.Windows.Controls.Button button)
+        {
+            // Reset all tool buttons
+            EraserButton.Background = new SolidColorBrush(MediaColors.Transparent);
+            FillButton.Background = new SolidColorBrush(MediaColors.Transparent);
+            PencilButton.Background = new SolidColorBrush(MediaColors.Transparent);
+            RectangleButton.Background = new SolidColorBrush(MediaColors.Transparent);
+            EllipseButton.Background = new SolidColorBrush(MediaColors.Transparent);
+
+            // Highlight selected button
+            if (button != null)
+            {
+                button.Background = new SolidColorBrush(MediaColors.LightBlue);
+                _selectedToolButton = button;
+            }
+        }
+
         private void UpdateToolColor(MediaColor color)
         {
             var canvas = GetCanvasControl();
@@ -110,6 +128,7 @@ namespace MSPaint
                 var tool = new PencilTool(canvas.PixelGrid);
                 tool.DrawColor = _primaryColor;
                 SetTool(tool);
+                HighlightToolButton(PencilButton);
             }
         }
 
@@ -121,6 +140,7 @@ namespace MSPaint
                 var tool = new EraserTool(canvas.PixelGrid);
                 tool.EraseColor = _secondaryColor;
                 SetTool(tool);
+                HighlightToolButton(EraserButton);
             }
         }
 
@@ -132,6 +152,7 @@ namespace MSPaint
                 var tool = new FillTool(canvas.PixelGrid);
                 tool.FillColor = _primaryColor;
                 SetTool(tool);
+                HighlightToolButton(FillButton);
             }
         }
 
@@ -143,6 +164,7 @@ namespace MSPaint
                 var tool = new RectangleTool(canvas.PixelGrid);
                 tool.DrawColor = _primaryColor;
                 SetTool(tool);
+                HighlightToolButton(RectangleButton);
             }
         }
 
@@ -154,6 +176,7 @@ namespace MSPaint
                 var tool = new EllipseTool(canvas.PixelGrid);
                 tool.DrawColor = _primaryColor;
                 SetTool(tool);
+                HighlightToolButton(EllipseButton);
             }
         }
 

@@ -61,13 +61,21 @@ namespace MSPaint.Controls
 
             // Render the grid
             await RenderAsync();
+            
+            // Notify parent that canvas size has changed
+            CanvasSizeChanged?.Invoke(this, EventArgs.Empty);
         }
+        
+        public event EventHandler? CanvasSizeChanged;
 
         public async Task InitializeCanvas(PixelGrid grid)
         {
             _pixelGrid = grid;
             _currentTool = new PencilTool(_pixelGrid);
             await RenderAsync();
+            
+            // Notify parent that canvas size has changed
+            CanvasSizeChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void DoubleBufferedCanvasControl_Loaded(object sender, System.Windows.RoutedEventArgs e)
@@ -83,7 +91,8 @@ namespace MSPaint.Controls
             CaptureMouse();
             _isDrawing = true;
             
-            var position = e.GetPosition(this);
+            // Get position relative to BackImage (the actual rendered canvas)
+            var position = e.GetPosition(BackImage);
             var gridPosition = ScreenToGrid(position);
             
             if (gridPosition.HasValue)
@@ -98,7 +107,8 @@ namespace MSPaint.Controls
         {
             if (!_isDrawing || _pixelGrid == null || _currentTool == null) return;
 
-            var position = e.GetPosition(this);
+            // Get position relative to BackImage (the actual rendered canvas)
+            var position = e.GetPosition(BackImage);
             var gridPosition = ScreenToGrid(position);
             
             if (gridPosition.HasValue)
@@ -122,7 +132,8 @@ namespace MSPaint.Controls
             ReleaseMouseCapture();
             _isDrawing = false;
 
-            var position = e.GetPosition(this);
+            // Get position relative to BackImage (the actual rendered canvas)
+            var position = e.GetPosition(BackImage);
             var gridPosition = ScreenToGrid(position);
             
             if (gridPosition.HasValue)
@@ -137,6 +148,7 @@ namespace MSPaint.Controls
             if (_pixelGrid == null) return null;
 
             // Convert screen coordinates to grid coordinates
+            // screenPoint is already relative to BackImage, so we can directly divide by PixelSize
             int gridX = (int)(screenPoint.X / _pixelGrid.PixelSize);
             int gridY = (int)(screenPoint.Y / _pixelGrid.PixelSize);
 
@@ -160,6 +172,13 @@ namespace MSPaint.Controls
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     BackImage.Source = bitmap;
+                    
+                    // Set the actual size of the image and control
+                    BackImage.Width = bitmap.PixelWidth;
+                    BackImage.Height = bitmap.PixelHeight;
+                    
+                    // Update UserControl size to match the image (no explicit width/height to allow natural sizing)
+                    // The parent Border will size based on this
                 });
             }
             catch (Exception ex)

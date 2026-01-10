@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 using MSPaint.Controls;
 using MSPaint.Models;
@@ -16,6 +17,24 @@ namespace MSPaint.Pages
         public DrawingPage()
         {
             InitializeComponent();
+            
+            // Subscribe to canvas size changes
+            if (CanvasControl != null)
+            {
+                CanvasControl.CanvasSizeChanged += CanvasControl_CanvasSizeChanged;
+            }
+        }
+
+        private void CanvasControl_CanvasSizeChanged(object? sender, EventArgs e)
+        {
+            var canvas = GetCanvasControl();
+            if (canvas?.PixelGrid != null)
+            {
+                int width = canvas.PixelGrid.Width * canvas.PixelGrid.PixelSize;
+                int height = canvas.PixelGrid.Height * canvas.PixelGrid.PixelSize;
+                CanvasBorder.Width = width;
+                CanvasBorder.Height = height;
+            }
         }
 
         public async Task InitializeCanvas(CanvasSettings settings)
@@ -24,6 +43,7 @@ namespace MSPaint.Pages
             if (canvas != null)
             {
                 await canvas.InitializeCanvas(settings);
+                UpdateCanvasBorderSize(settings);
             }
         }
 
@@ -33,7 +53,20 @@ namespace MSPaint.Pages
             if (canvas != null)
             {
                 await canvas.InitializeCanvas(grid);
+                // Calculate size from grid
+                int width = grid.Width * grid.PixelSize;
+                int height = grid.Height * grid.PixelSize;
+                CanvasBorder.Width = width;
+                CanvasBorder.Height = height;
             }
+        }
+
+        private void UpdateCanvasBorderSize(CanvasSettings settings)
+        {
+            int width = settings.Width * settings.PixelSize;
+            int height = settings.Height * settings.PixelSize;
+            CanvasBorder.Width = width;
+            CanvasBorder.Height = height;
         }
     }
 }
