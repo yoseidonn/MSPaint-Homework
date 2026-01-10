@@ -19,13 +19,8 @@
     <!-- App.xaml lives under src and is the application definition -->
     <ApplicationDefinition Include="src\App.xaml" />
 
-    <!-- Exclude the duplicate src\MSPaint directory from compilation -->
-    <Compile Remove="src\MSPaint\**" />
-    <Page Remove="src\MSPaint\**" />
-    <None Remove="src\MSPaint\**" />
-
     <!-- other content under src -->
-    <None Include="src\**\*.*" Exclude="src\**\*.cs;src\**\*.xaml;src\MSPaint\**" />
+    <None Include="src\**\*.*" Exclude="src\**\*.cs;src\**\*.xaml" />
   </ItemGroup>
 
 </Project>
