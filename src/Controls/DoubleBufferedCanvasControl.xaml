@@ -3,9 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:MSPaint.Controls">
     <Grid Background="Transparent">
-        <!-- Back buffer: actual image -->
-        <Image x:Name="BackImage" Stretch="None"/>
-        <!-- Front buffer: transparent preview layer -->
-        <Image x:Name="FrontImage" Stretch="None"/>
+        <!-- Back buffer: actual image - 1:1 bitmap, scaled in UI with NearestNeighbor -->
+        <Image x:Name="BackImage" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+        <!-- Front buffer: transparent preview layer - 1:1 bitmap, scaled in UI -->
+        <Image x:Name="FrontImage" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
     </Grid>
 </UserControl>

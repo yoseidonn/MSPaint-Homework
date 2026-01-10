@@ -205,13 +205,13 @@ namespace MSPaint.Controls
                 _lastRenderTime = DateTime.Now;
             }
 
-            Logger.LogRender("START", _pixelGrid.Width * _pixelGrid.PixelSize, _pixelGrid.Height * _pixelGrid.PixelSize, force);
+            Logger.LogRender("START", _pixelGrid.Width, _pixelGrid.Height, force);
 
             try
             {
-                // Calculate required dimensions
-                int width = _pixelGrid.Width * _pixelGrid.PixelSize;
-                int height = _pixelGrid.Height * _pixelGrid.PixelSize;
+                // Calculate required dimensions - 1:1 with grid (NO PixelSize multiplication)
+                int width = _pixelGrid.Width;
+                int height = _pixelGrid.Height;
                 width = System.Math.Max(1, width);
                 height = System.Math.Max(1, height);
 
@@ -263,7 +263,7 @@ namespace MSPaint.Controls
                 bool needsPreview = _currentTool?.UsesPreview == true && _isDrawing;
                 if (needsPreview)
                 {
-                    // Create or reuse preview bitmap
+                    // Create or reuse preview bitmap (1:1 with grid)
                     if (_previewBitmap == null || 
                         _previewBitmap.PixelWidth != width || 
                         _previewBitmap.PixelHeight != height)
@@ -301,8 +301,8 @@ namespace MSPaint.Controls
                         _previewBitmap.Unlock();
                     }
                     
-                    // Render preview
-                    _currentTool.RenderPreview(_previewBitmap, _pixelGrid.PixelSize);
+                    // Render preview (1:1 mapping - no pixelSize parameter needed)
+                    _currentTool.RenderPreview(_previewBitmap, 1);
                     Logger.LogRender("Preview rendered", width, height, force);
                 }
                 else
@@ -319,7 +319,7 @@ namespace MSPaint.Controls
                     }
                 }
 
-                // Update UI on UI thread
+                // Update UI on UI thread - scale images by PixelSize for visual display
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     if (_cachedBitmap != null)
@@ -330,11 +330,12 @@ namespace MSPaint.Controls
                             BackImage.Source = _cachedBitmap;
                             _bitmapSourceSet = true;
                         }
-                        BackImage.Width = _cachedBitmap.PixelWidth;
-                        BackImage.Height = _cachedBitmap.PixelHeight;
+                        // Scale image by PixelSize for visual display (bitmap is 1:1, UI scales it)
+                        BackImage.Width = _cachedBitmap.PixelWidth * _pixelGrid.PixelSize;
+                        BackImage.Height = _cachedBitmap.PixelHeight * _pixelGrid.PixelSize;
                     }
                     
-                    // Update preview image
+                    // Update preview image - scale by PixelSize
                     if (needsPreview && _previewBitmap != null)
                     {
                         if (!_previewBitmapSourceSet)
@@ -342,8 +343,8 @@ namespace MSPaint.Controls
                             FrontImage.Source = _previewBitmap;
                             _previewBitmapSourceSet = true;
                         }
-                        FrontImage.Width = _previewBitmap.PixelWidth;
-                        FrontImage.Height = _previewBitmap.PixelHeight;
+                        FrontImage.Width = _previewBitmap.PixelWidth * _pixelGrid.PixelSize;
+                        FrontImage.Height = _previewBitmap.PixelHeight * _pixelGrid.PixelSize;
                     }
                 });
                 

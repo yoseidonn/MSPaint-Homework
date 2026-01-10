@@ -70,13 +70,19 @@ namespace MSPaint.Tools
 
                     if (radiusX == 0 && radiusY == 0)
                     {
-                        // Single point
+                        // Single point (1:1 mapping)
                         if (IsValidPosition(centerX, centerY))
-                            DrawPixelScaled(buffer, stride, bytesPerPixel, centerX, centerY, pixelSize, _drawColor);
+                        {
+                            int offset = centerY * stride + centerX * bytesPerPixel;
+                            buffer[offset] = _drawColor.B;
+                            buffer[offset + 1] = _drawColor.G;
+                            buffer[offset + 2] = _drawColor.R;
+                            buffer[offset + 3] = _drawColor.A;
+                        }
                     }
                     else
                     {
-                        // Draw ellipse using midpoint algorithm
+                        // Draw ellipse using midpoint algorithm (1:1 mapping)
                         for (int angle = 0; angle < 360; angle++)
                         {
                             double radians = angle * System.Math.PI / 180.0;
@@ -84,14 +90,18 @@ namespace MSPaint.Tools
                             int y = centerY + (int)(radiusY * System.Math.Sin(radians));
 
                             if (IsValidPosition(x, y))
-                                DrawPixelScaled(buffer, stride, bytesPerPixel, x, y, pixelSize, _drawColor);
+                            {
+                                int offset = y * stride + x * bytesPerPixel;
+                                buffer[offset] = _drawColor.B;
+                                buffer[offset + 1] = _drawColor.G;
+                                buffer[offset + 2] = _drawColor.R;
+                                buffer[offset + 3] = _drawColor.A;
+                            }
                         }
                     }
                 }
 
-                int width = Grid.Width * pixelSize;
-                int height = Grid.Height * pixelSize;
-                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, Grid.Width, Grid.Height));
             }
             finally
             {
@@ -127,29 +137,6 @@ namespace MSPaint.Tools
             }
         }
 
-        private unsafe void DrawPixelScaled(byte* buffer, int stride, int bytesPerPixel, int gridX, int gridY, int pixelSize, MediaColor color)
-        {
-            int width = Grid.Width * pixelSize;
-            int height = Grid.Height * pixelSize;
-
-            for (int py = 0; py < pixelSize; py++)
-            {
-                for (int px = 0; px < pixelSize; px++)
-                {
-                    int x = gridX * pixelSize + px;
-                    int y = gridY * pixelSize + py;
-
-                    if (x < width && y < height)
-                    {
-                        int offset = y * stride + x * bytesPerPixel;
-                        buffer[offset] = color.B;     // Blue
-                        buffer[offset + 1] = color.G; // Green
-                        buffer[offset + 2] = color.R; // Red
-                        buffer[offset + 3] = color.A; // Alpha
-                    }
-                }
-            }
-        }
 
         private bool IsValidPosition(int x, int y)
         {

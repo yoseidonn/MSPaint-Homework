@@ -68,15 +68,27 @@ namespace MSPaint.Tools
                     int minY = System.Math.Min(_startY, _lastY);
                     int maxY = System.Math.Max(_startY, _lastY);
 
-                    // Draw rectangle outline to preview bitmap
+                    // Draw rectangle outline to preview bitmap (1:1 mapping)
                     for (int x = minX; x <= maxX; x++)
                     {
                         if (x >= 0 && x < Grid.Width)
                         {
                             if (minY >= 0 && minY < Grid.Height)
-                                DrawPixelScaled(buffer, stride, bytesPerPixel, x, minY, pixelSize, _drawColor);
+                            {
+                                int offset = minY * stride + x * bytesPerPixel;
+                                buffer[offset] = _drawColor.B;
+                                buffer[offset + 1] = _drawColor.G;
+                                buffer[offset + 2] = _drawColor.R;
+                                buffer[offset + 3] = _drawColor.A;
+                            }
                             if (maxY >= 0 && maxY < Grid.Height)
-                                DrawPixelScaled(buffer, stride, bytesPerPixel, x, maxY, pixelSize, _drawColor);
+                            {
+                                int offset = maxY * stride + x * bytesPerPixel;
+                                buffer[offset] = _drawColor.B;
+                                buffer[offset + 1] = _drawColor.G;
+                                buffer[offset + 2] = _drawColor.R;
+                                buffer[offset + 3] = _drawColor.A;
+                            }
                         }
                     }
 
@@ -85,16 +97,26 @@ namespace MSPaint.Tools
                         if (y >= 0 && y < Grid.Height)
                         {
                             if (minX >= 0 && minX < Grid.Width)
-                                DrawPixelScaled(buffer, stride, bytesPerPixel, minX, y, pixelSize, _drawColor);
+                            {
+                                int offset = y * stride + minX * bytesPerPixel;
+                                buffer[offset] = _drawColor.B;
+                                buffer[offset + 1] = _drawColor.G;
+                                buffer[offset + 2] = _drawColor.R;
+                                buffer[offset + 3] = _drawColor.A;
+                            }
                             if (maxX >= 0 && maxX < Grid.Width)
-                                DrawPixelScaled(buffer, stride, bytesPerPixel, maxX, y, pixelSize, _drawColor);
+                            {
+                                int offset = y * stride + maxX * bytesPerPixel;
+                                buffer[offset] = _drawColor.B;
+                                buffer[offset + 1] = _drawColor.G;
+                                buffer[offset + 2] = _drawColor.R;
+                                buffer[offset + 3] = _drawColor.A;
+                            }
                         }
                     }
                 }
 
-                int width = Grid.Width * pixelSize;
-                int height = Grid.Height * pixelSize;
-                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, Grid.Width, Grid.Height));
             }
             finally
             {
@@ -128,29 +150,6 @@ namespace MSPaint.Tools
             }
         }
 
-        private unsafe void DrawPixelScaled(byte* buffer, int stride, int bytesPerPixel, int gridX, int gridY, int pixelSize, MediaColor color)
-        {
-            int width = Grid.Width * pixelSize;
-            int height = Grid.Height * pixelSize;
-
-            for (int py = 0; py < pixelSize; py++)
-            {
-                for (int px = 0; px < pixelSize; px++)
-                {
-                    int x = gridX * pixelSize + px;
-                    int y = gridY * pixelSize + py;
-
-                    if (x < width && y < height)
-                    {
-                        int offset = y * stride + x * bytesPerPixel;
-                        buffer[offset] = color.B;     // Blue
-                        buffer[offset + 1] = color.G; // Green
-                        buffer[offset + 2] = color.R; // Red
-                        buffer[offset + 3] = color.A; // Alpha
-                    }
-                }
-            }
-        }
 
         private bool IsValidPosition(int x, int y)
         {

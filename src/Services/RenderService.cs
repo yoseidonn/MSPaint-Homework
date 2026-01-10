@@ -8,19 +8,19 @@ namespace MSPaint.Services
 {
     public class RenderService
     {
-        // Renders a PixelGrid to a WriteableBitmap, scaling each pixel by PixelSize
+        // Renders a PixelGrid to a WriteableBitmap (1:1 mapping - no scaling)
+        // Visual scaling is done in XAML with NearestNeighbor to save memory
         // For large canvases (>1000x1000 pixels), pixel data is prepared on background thread
-        // then copied to bitmap on UI thread for better performance
         public async Task<WriteableBitmap> RenderAsync(PixelGrid? grid)
         {
-            // Calculate dimensions
+            // Calculate dimensions - 1:1 with grid (NO PixelSize multiplication)
             int width = 1;
             int height = 1;
 
             if (grid != null)
             {
-                width = grid.Width * grid.PixelSize;
-                height = grid.Height * grid.PixelSize;
+                width = grid.Width;
+                height = grid.Height;
             }
 
             width = System.Math.Max(1, width);
@@ -34,7 +34,6 @@ namespace MSPaint.Services
                 int stride = wb.BackBufferStride;
                 int bytesPerPixel = 4; // PBGRA32 = 4 bytes per pixel
                 int totalBytes = stride * height;
-                int pixelSize = grid.PixelSize;
 
                 // For large canvases, prepare pixel data on background thread
                 bool useBackgroundThread = (width * height) > 1000000; // 1M pixels threshold
@@ -43,7 +42,7 @@ namespace MSPaint.Services
                 if (useBackgroundThread)
                 {
                     // Prepare pixel data on background thread
-                    pixelData = await Task.Run(() => PreparePixelData(grid, width, height, stride, bytesPerPixel, pixelSize));
+                    pixelData = await Task.Run(() => PreparePixelData(grid, width, height, stride, bytesPerPixel));
                 }
 
                 // Update bitmap on UI thread
@@ -61,31 +60,17 @@ namespace MSPaint.Services
                         }
                         else
                         {
-                            // Small canvas: render directly on UI thread
-                            for (int gridY = 0; gridY < grid.Height; gridY++)
+                            // Small canvas: render directly on UI thread (1:1 mapping)
+                            for (int y = 0; y < grid.Height; y++)
                             {
-                                for (int gridX = 0; gridX < grid.Width; gridX++)
+                                for (int x = 0; x < grid.Width; x++)
                                 {
-                                    MediaColor pixelColor = grid.GetPixel(gridX, gridY);
-
-                                    // Draw this pixel scaled by PixelSize
-                                    for (int py = 0; py < pixelSize; py++)
-                                    {
-                                        for (int px = 0; px < pixelSize; px++)
-                                        {
-                                            int x = gridX * pixelSize + px;
-                                            int y = gridY * pixelSize + py;
-
-                                            if (x < width && y < height)
-                                            {
-                                                int offset = y * stride + x * bytesPerPixel;
-                                                buffer[offset] = pixelColor.B;     // Blue
-                                                buffer[offset + 1] = pixelColor.G; // Green
-                                                buffer[offset + 2] = pixelColor.R; // Red
-                                                buffer[offset + 3] = pixelColor.A; // Alpha
-                                            }
-                                        }
-                                    }
+                                    MediaColor pixelColor = grid.GetPixel(x, y);
+                                    int offset = y * stride + x * bytesPerPixel;
+                                    buffer[offset] = pixelColor.B;     // Blue
+                                    buffer[offset + 1] = pixelColor.G; // Green
+                                    buffer[offset + 2] = pixelColor.R; // Red
+                                    buffer[offset + 3] = pixelColor.A; // Alpha
                                 }
                             }
                         }
@@ -134,42 +119,28 @@ namespace MSPaint.Services
             return wb;
         }
 
-        private byte[] PreparePixelData(PixelGrid grid, int width, int height, int stride, int bytesPerPixel, int pixelSize)
+        private byte[] PreparePixelData(PixelGrid grid, int width, int height, int stride, int bytesPerPixel)
         {
             byte[] pixelData = new byte[stride * height];
 
-            // Prepare pixel data on background thread
-            for (int gridY = 0; gridY < grid.Height; gridY++)
+            // Prepare pixel data on background thread (1:1 mapping)
+            for (int y = 0; y < grid.Height; y++)
             {
-                for (int gridX = 0; gridX < grid.Width; gridX++)
+                for (int x = 0; x < grid.Width; x++)
                 {
-                    MediaColor pixelColor = grid.GetPixel(gridX, gridY);
-
-                    // Draw this pixel scaled by PixelSize
-                    for (int py = 0; py < pixelSize; py++)
-                    {
-                        for (int px = 0; px < pixelSize; px++)
-                        {
-                            int x = gridX * pixelSize + px;
-                            int y = gridY * pixelSize + py;
-
-                            if (x < width && y < height)
-                            {
-                                int offset = y * stride + x * bytesPerPixel;
-                                pixelData[offset] = pixelColor.B;     // Blue
-                                pixelData[offset + 1] = pixelColor.G; // Green
-                                pixelData[offset + 2] = pixelColor.R; // Red
-                                pixelData[offset + 3] = pixelColor.A; // Alpha
-                            }
-                        }
-                    }
+                    MediaColor pixelColor = grid.GetPixel(x, y);
+                    int offset = y * stride + x * bytesPerPixel;
+                    pixelData[offset] = pixelColor.B;     // Blue
+                    pixelData[offset + 1] = pixelColor.G; // Green
+                    pixelData[offset + 2] = pixelColor.R; // Red
+                    pixelData[offset + 3] = pixelColor.A; // Alpha
                 }
             }
 
             return pixelData;
         }
 
-        // Updates an existing WriteableBitmap with new pixel data from PixelGrid
+        // Updates an existing WriteableBitmap with new pixel data from PixelGrid (1:1 mapping)
         // This method reuses the bitmap instead of creating a new one, preventing memory leaks
         // Now uses dirty region tracking - only renders changed pixels
         // Returns dirty region size for logging purposes
@@ -178,8 +149,8 @@ namespace MSPaint.Services
             if (bitmap == null || grid == null) 
                 return (false, 0, 0);
 
-            int width = grid.Width * grid.PixelSize;
-            int height = grid.Height * grid.PixelSize;
+            int width = grid.Width;
+            int height = grid.Height;
             width = System.Math.Max(1, width);
             height = System.Math.Max(1, height);
 
@@ -200,29 +171,16 @@ namespace MSPaint.Services
             maxX = System.Math.Min(grid.Width - 1, maxX);
             maxY = System.Math.Min(grid.Height - 1, maxY);
 
-            // Calculate bitmap coordinates for dirty region
-            int bitmapMinX = minX * grid.PixelSize;
-            int bitmapMinY = minY * grid.PixelSize;
-            int bitmapMaxX = (maxX + 1) * grid.PixelSize;
-            int bitmapMaxY = (maxY + 1) * grid.PixelSize;
-
-            // Clamp to bitmap bounds
-            bitmapMinX = System.Math.Max(0, bitmapMinX);
-            bitmapMinY = System.Math.Max(0, bitmapMinY);
-            bitmapMaxX = System.Math.Min(width, bitmapMaxX);
-            bitmapMaxY = System.Math.Min(height, bitmapMaxY);
-
-            int dirtyWidth = bitmapMaxX - bitmapMinX;
-            int dirtyHeight = bitmapMaxY - bitmapMinY;
+            int dirtyWidth = maxX - minX + 1;
+            int dirtyHeight = maxY - minY + 1;
 
             if (dirtyWidth <= 0 || dirtyHeight <= 0)
                 return (false, 0, 0);
 
             int stride = bitmap.BackBufferStride;
             int bytesPerPixel = 4; // PBGRA32 = 4 bytes per pixel
-            int pixelSize = grid.PixelSize;
 
-            // Update only dirty region on UI thread (direct update is fast for small regions)
+            // Update only dirty region on UI thread (1:1 mapping - no scaling)
             bitmap.Lock();
             try
             {
@@ -230,37 +188,23 @@ namespace MSPaint.Services
                 {
                     byte* buffer = (byte*)bitmap.BackBuffer;
 
-                    // Render only dirty region
-                    for (int gridY = minY; gridY <= maxY; gridY++)
+                    // Render only dirty region (1:1 mapping)
+                    for (int y = minY; y <= maxY; y++)
                     {
-                        for (int gridX = minX; gridX <= maxX; gridX++)
+                        for (int x = minX; x <= maxX; x++)
                         {
-                            MediaColor pixelColor = grid.GetPixel(gridX, gridY);
-
-                            // Draw this pixel scaled by PixelSize
-                            for (int py = 0; py < pixelSize; py++)
-                            {
-                                for (int px = 0; px < pixelSize; px++)
-                                {
-                                    int x = gridX * pixelSize + px;
-                                    int y = gridY * pixelSize + py;
-
-                                    if (x >= bitmapMinX && x < bitmapMaxX && y >= bitmapMinY && y < bitmapMaxY)
-                                    {
-                                        int offset = y * stride + x * bytesPerPixel;
-                                        buffer[offset] = pixelColor.B;     // Blue
-                                        buffer[offset + 1] = pixelColor.G; // Green
-                                        buffer[offset + 2] = pixelColor.R; // Red
-                                        buffer[offset + 3] = pixelColor.A; // Alpha
-                                    }
-                                }
-                            }
+                            MediaColor pixelColor = grid.GetPixel(x, y);
+                            int offset = y * stride + x * bytesPerPixel;
+                            buffer[offset] = pixelColor.B;     // Blue
+                            buffer[offset + 1] = pixelColor.G; // Green
+                            buffer[offset + 2] = pixelColor.R; // Red
+                            buffer[offset + 3] = pixelColor.A; // Alpha
                         }
                     }
                 }
 
                 // Mark only dirty region as dirty (not entire bitmap)
-                bitmap.AddDirtyRect(new System.Windows.Int32Rect(bitmapMinX, bitmapMinY, dirtyWidth, dirtyHeight));
+                bitmap.AddDirtyRect(new System.Windows.Int32Rect(minX, minY, dirtyWidth, dirtyHeight));
             }
             finally
             {
@@ -271,12 +215,13 @@ namespace MSPaint.Services
         }
         
         // Full update method - renders entire bitmap (used for initial render or when needed)
+        // Uses 1:1 mapping - no PixelSize scaling
         public async Task UpdateBitmapFullAsync(WriteableBitmap bitmap, PixelGrid? grid)
         {
             if (bitmap == null || grid == null) return;
 
-            int width = grid.Width * grid.PixelSize;
-            int height = grid.Height * grid.PixelSize;
+            int width = grid.Width;
+            int height = grid.Height;
             width = System.Math.Max(1, width);
             height = System.Math.Max(1, height);
 
@@ -287,7 +232,6 @@ namespace MSPaint.Services
             int stride = bitmap.BackBufferStride;
             int bytesPerPixel = 4; // PBGRA32 = 4 bytes per pixel
             int totalBytes = stride * height;
-            int pixelSize = grid.PixelSize;
 
             // For large canvases, prepare pixel data on background thread
             bool useBackgroundThread = (width * height) > 1000000; // 1M pixels threshold
@@ -296,7 +240,7 @@ namespace MSPaint.Services
             if (useBackgroundThread)
             {
                 // Prepare pixel data on background thread
-                pixelData = await Task.Run(() => PreparePixelData(grid, width, height, stride, bytesPerPixel, pixelSize));
+                pixelData = await Task.Run(() => PreparePixelData(grid, width, height, stride, bytesPerPixel));
             }
 
             // Update bitmap on UI thread
@@ -314,31 +258,17 @@ namespace MSPaint.Services
                     }
                     else
                     {
-                        // Small canvas: render directly on UI thread
-                        for (int gridY = 0; gridY < grid.Height; gridY++)
+                        // Small canvas: render directly on UI thread (1:1 mapping)
+                        for (int y = 0; y < grid.Height; y++)
                         {
-                            for (int gridX = 0; gridX < grid.Width; gridX++)
+                            for (int x = 0; x < grid.Width; x++)
                             {
-                                MediaColor pixelColor = grid.GetPixel(gridX, gridY);
-
-                                // Draw this pixel scaled by PixelSize
-                                for (int py = 0; py < pixelSize; py++)
-                                {
-                                    for (int px = 0; px < pixelSize; px++)
-                                    {
-                                        int x = gridX * pixelSize + px;
-                                        int y = gridY * pixelSize + py;
-
-                                        if (x < width && y < height)
-                                        {
-                                            int offset = y * stride + x * bytesPerPixel;
-                                            buffer[offset] = pixelColor.B;     // Blue
-                                            buffer[offset + 1] = pixelColor.G; // Green
-                                            buffer[offset + 2] = pixelColor.R; // Red
-                                            buffer[offset + 3] = pixelColor.A; // Alpha
-                                        }
-                                    }
-                                }
+                                MediaColor pixelColor = grid.GetPixel(x, y);
+                                int offset = y * stride + x * bytesPerPixel;
+                                buffer[offset] = pixelColor.B;     // Blue
+                                buffer[offset + 1] = pixelColor.G; // Green
+                                buffer[offset + 2] = pixelColor.R; // Red
+                                buffer[offset + 3] = pixelColor.A; // Alpha
                             }
                         }
                     }
