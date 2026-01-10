@@ -1,9 +1,10 @@
-using System.Windows;
 using System;
+using System.Windows;
+using WpfApplication = System.Windows.Application;
 
 namespace MSPaint
 {
-    public partial class App : Application
+    public partial class App : WpfApplication
     {
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -13,9 +14,40 @@ namespace MSPaint
             this.DispatcherUnhandledException += App_DispatcherUnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             
-            // Create and show the main window
-            var mainWindow = new MainWindow();
-            mainWindow.Show();
+            // Show canvas setup window first
+            var setupWindow = new Pages.CanvasSetupWindow();
+            if (setupWindow.ShowDialog() == true)
+            {
+                // Create and show the main window
+                var mainWindow = new MainWindow();
+                
+                // Initialize canvas based on setup result
+                if (setupWindow.LoadedGrid != null)
+                {
+                    // Load from file
+                    var page = mainWindow.GetDrawingPage();
+                    if (page != null)
+                    {
+                        page.InitializeCanvas(setupWindow.LoadedGrid).Wait();
+                    }
+                }
+                else if (setupWindow.Result != null)
+                {
+                    // Create new canvas with settings
+                    var page = mainWindow.GetDrawingPage();
+                    if (page != null)
+                    {
+                        page.InitializeCanvas(setupWindow.Result).Wait();
+                    }
+                }
+                
+                mainWindow.Show();
+            }
+            else
+            {
+                // User cancelled, exit application
+                Shutdown();
+            }
         }
 
         private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)

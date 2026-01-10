@@ -8,8 +8,12 @@ namespace MSPaint.Services
     public class RenderService
     {
         // Renders a PixelGrid to a WriteableBitmap, scaling each pixel by PixelSize
+        // Note: WriteableBitmap operations must be on UI thread for thread safety
+        // For now, we render synchronously. For large canvases, we can optimize later
+        // by preparing pixel data on background thread, then updating bitmap on UI thread
         public Task<WriteableBitmap> RenderAsync(PixelGrid? grid)
         {
+            // Calculate dimensions
             int width = 1;
             int height = 1;
 
@@ -22,11 +26,12 @@ namespace MSPaint.Services
             width = System.Math.Max(1, width);
             height = System.Math.Max(1, height);
 
+            // Create bitmap on UI thread (must be on UI thread)
             var wb = new WriteableBitmap(width, height, 96, 96, PixelFormats.Pbgra32, null);
             
             if (grid != null)
             {
-                // Lock the bitmap for writing
+                // Update bitmap on UI thread
                 wb.Lock();
                 try
                 {

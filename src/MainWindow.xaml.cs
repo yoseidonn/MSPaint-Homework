@@ -7,13 +7,20 @@ namespace MSPaint
     /// </summary>
     public partial class MainWindow : Window
     {
+        private Pages.DrawingPage? _drawingPage;
+
         public MainWindow()
         {
             InitializeComponent();
 
             // At startup we mount the drawing page control into the CanvasHost
-            var page = new Pages.DrawingPage();
-            CanvasHost.Content = page;
+            _drawingPage = new Pages.DrawingPage();
+            CanvasHost.Content = _drawingPage;
+        }
+
+        public Pages.DrawingPage? GetDrawingPage()
+        {
+            return _drawingPage;
         }
     }
 }
