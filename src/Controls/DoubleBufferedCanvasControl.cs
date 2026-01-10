@@ -3,9 +3,11 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using MSPaint.Models;
 using MSPaint.Services;
 using MSPaint.Tools;
+using MSPaint.Utils;
 using WpfUserControl = System.Windows.Controls.UserControl;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
 
@@ -18,6 +20,12 @@ namespace MSPaint.Controls
         private ITool? _currentTool;
         private bool _isDrawing;
         private System.Windows.Point _lastMousePosition;
+        private WriteableBitmap? _cachedBitmap;
+        private WriteableBitmap? _previewBitmap;
+        private DateTime _lastRenderTime = DateTime.MinValue;
+        private const int MinRenderIntervalMs = 16; // ~60 FPS max
+        private bool _bitmapSourceSet = false; // Track if Source has been set to avoid redundant assignments
+        private bool _previewBitmapSourceSet = false;
 
         public PixelGrid? PixelGrid => _pixelGrid;
 
@@ -47,6 +55,11 @@ namespace MSPaint.Controls
         {
             _pixelGrid = new PixelGrid(settings.Width, settings.Height, settings.PixelSize);
             
+            // Clear cached bitmaps when reinitializing
+            _cachedBitmap = null;
+            _previewBitmap = null;
+            _previewBitmapSourceSet = false;
+            
             // Initialize all pixels with background color
             for (int y = 0; y < _pixelGrid.Height; y++)
             {
@@ -60,7 +73,7 @@ namespace MSPaint.Controls
             _currentTool = new PencilTool(_pixelGrid);
 
             // Render the grid
-            await RenderAsync();
+            await RenderAsync(force: true);
             
             // Notify parent that canvas size has changed
             CanvasSizeChanged?.Invoke(this, EventArgs.Empty);
@@ -71,8 +84,14 @@ namespace MSPaint.Controls
         public async Task InitializeCanvas(PixelGrid grid)
         {
             _pixelGrid = grid;
+            
+            // Clear cached bitmaps when reinitializing
+            _cachedBitmap = null;
+            _previewBitmap = null;
+            _previewBitmapSourceSet = false;
+            
             _currentTool = new PencilTool(_pixelGrid);
-            await RenderAsync();
+            await RenderAsync(force: true);
             
             // Notify parent that canvas size has changed
             CanvasSizeChanged?.Invoke(this, EventArgs.Empty);
@@ -99,7 +118,7 @@ namespace MSPaint.Controls
             {
                 _lastMousePosition = gridPosition.Value;
                 _currentTool.OnMouseDown((int)gridPosition.Value.X, (int)gridPosition.Value.Y);
-                await RenderAsync();
+                await RenderAsync(force: true);
             }
         }
 
@@ -139,7 +158,7 @@ namespace MSPaint.Controls
             if (gridPosition.HasValue)
             {
                 _currentTool.OnMouseUp((int)gridPosition.Value.X, (int)gridPosition.Value.Y);
-                await RenderAsync();
+                await RenderAsync(force: true);
             }
         }
 
@@ -159,30 +178,166 @@ namespace MSPaint.Controls
             return new System.Windows.Point(gridX, gridY);
         }
 
-        private async Task RenderAsync()
+        private async Task RenderAsync(bool force = false)
         {
             if (_pixelGrid == null) return;
 
+            // Throttling: limit to 60 FPS to prevent excessive rendering
+            if (!force)
+            {
+                var now = DateTime.Now;
+                var elapsed = (now - _lastRenderTime).TotalMilliseconds;
+                if (elapsed < MinRenderIntervalMs)
+                {
+                    Logger.LogRender("SKIPPED (throttled)", _pixelGrid.Width * _pixelGrid.PixelSize, _pixelGrid.Height * _pixelGrid.PixelSize, force);
+                    return; // Skip this render to maintain frame rate
+                }
+                _lastRenderTime = now;
+            }
+            else
+            {
+                _lastRenderTime = DateTime.Now;
+            }
+
+            Logger.LogRender("START", _pixelGrid.Width * _pixelGrid.PixelSize, _pixelGrid.Height * _pixelGrid.PixelSize, force);
+
             try
             {
-                // Render on background thread, then update UI on UI thread
-                var bitmap = await _renderService.RenderAsync(_pixelGrid);
-                
+                // Calculate required dimensions
+                int width = _pixelGrid.Width * _pixelGrid.PixelSize;
+                int height = _pixelGrid.Height * _pixelGrid.PixelSize;
+                width = System.Math.Max(1, width);
+                height = System.Math.Max(1, height);
+
+                // Create or reuse main bitmap
+                bool bitmapCreated = false;
+                if (_cachedBitmap == null || 
+                    _cachedBitmap.PixelWidth != width || 
+                    _cachedBitmap.PixelHeight != height)
+                {
+                    Logger.LogMemory("Creating new main bitmap", width * height * 4);
+                    // Clear old bitmap reference before creating new one
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        if (BackImage.Source != null)
+                        {
+                            BackImage.Source = null; // Release old bitmap reference
+                        }
+                    });
+                    
+                    // Create new bitmap on UI thread (must be on UI thread)
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        _cachedBitmap = new WriteableBitmap(
+                            width, height, 96, 96, 
+                            PixelFormats.Pbgra32, null);
+                    });
+                    bitmapCreated = true;
+                    _bitmapSourceSet = false;
+                    // Initial render
+                    await _renderService.UpdateBitmapAsync(_cachedBitmap, _pixelGrid);
+                    Logger.LogRender("Main bitmap created and rendered", width, height, force);
+                }
+                else
+                {
+                    // Update existing bitmap (reuse to prevent memory leak)
+                    await _renderService.UpdateBitmapAsync(_cachedBitmap, _pixelGrid);
+                    Logger.LogRender("Main bitmap updated", width, height, force);
+                }
+
+                // Handle preview layer if tool uses it
+                bool needsPreview = _currentTool?.UsesPreview == true && _isDrawing;
+                if (needsPreview)
+                {
+                    // Create or reuse preview bitmap
+                    if (_previewBitmap == null || 
+                        _previewBitmap.PixelWidth != width || 
+                        _previewBitmap.PixelHeight != height)
+                    {
+                        Logger.LogMemory("Creating new preview bitmap", width * height * 4);
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            if (FrontImage.Source != null)
+                            {
+                                FrontImage.Source = null;
+                            }
+                            _previewBitmap = new WriteableBitmap(
+                                width, height, 96, 96,
+                                PixelFormats.Pbgra32, null);
+                        });
+                        _previewBitmapSourceSet = false;
+                    }
+                    
+                    // Clear preview bitmap
+                    _previewBitmap.Lock();
+                    try
+                    {
+                        unsafe
+                        {
+                            byte* buffer = (byte*)_previewBitmap.BackBuffer;
+                            int stride = _previewBitmap.BackBufferStride;
+                            int totalBytes = stride * height;
+                            System.Runtime.InteropServices.Marshal.Copy(
+                                new byte[totalBytes], 0, (System.IntPtr)buffer, totalBytes);
+                        }
+                        _previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+                    }
+                    finally
+                    {
+                        _previewBitmap.Unlock();
+                    }
+                    
+                    // Render preview
+                    _currentTool.RenderPreview(_previewBitmap, _pixelGrid.PixelSize);
+                    Logger.LogRender("Preview rendered", width, height, force);
+                }
+                else
+                {
+                    // Clear preview if not needed
+                    if (_previewBitmap != null)
+                    {
+                        await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            FrontImage.Source = null;
+                        });
+                        _previewBitmap = null;
+                        _previewBitmapSourceSet = false;
+                    }
+                }
+
                 // Update UI on UI thread
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
                 {
-                    BackImage.Source = bitmap;
+                    if (_cachedBitmap != null)
+                    {
+                        // Only set Source if it's a new bitmap or hasn't been set yet
+                        if (!_bitmapSourceSet || bitmapCreated)
+                        {
+                            BackImage.Source = _cachedBitmap;
+                            _bitmapSourceSet = true;
+                        }
+                        BackImage.Width = _cachedBitmap.PixelWidth;
+                        BackImage.Height = _cachedBitmap.PixelHeight;
+                    }
                     
-                    // Set the actual size of the image and control
-                    BackImage.Width = bitmap.PixelWidth;
-                    BackImage.Height = bitmap.PixelHeight;
-                    
-                    // Update UserControl size to match the image (no explicit width/height to allow natural sizing)
-                    // The parent Border will size based on this
+                    // Update preview image
+                    if (needsPreview && _previewBitmap != null)
+                    {
+                        if (!_previewBitmapSourceSet)
+                        {
+                            FrontImage.Source = _previewBitmap;
+                            _previewBitmapSourceSet = true;
+                        }
+                        FrontImage.Width = _previewBitmap.PixelWidth;
+                        FrontImage.Height = _previewBitmap.PixelHeight;
+                    }
                 });
+                
+                Logger.LogRender("COMPLETE", width, height, force);
             }
             catch (Exception ex)
             {
+                Logger.Log($"ERROR: {ex.Message}");
                 System.Windows.MessageBox.Show(
                     $"Error rendering canvas: {ex.Message}",
                     "Rendering Error",

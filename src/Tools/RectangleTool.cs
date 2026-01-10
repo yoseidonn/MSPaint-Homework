@@ -1,5 +1,6 @@
 using MSPaint.Models;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using MediaColor = System.Windows.Media.Color;
 using MediaColors = System.Windows.Media.Colors;
 
@@ -20,6 +21,8 @@ namespace MSPaint.Tools
             set => _drawColor = value;
         }
 
+        public override bool UsesPreview => true;
+
         public override void OnMouseDown(int x, int y)
         {
             _isDrawing = true;
@@ -32,26 +35,74 @@ namespace MSPaint.Tools
         public override void OnMouseMove(int x, int y)
         {
             if (!_isDrawing) return;
-
-            // Clear previous rectangle preview
-            DrawRectangle(_startX, _startY, _lastX, _lastY, MediaColors.White);
-
-            // Draw new rectangle preview
+            // Just update coordinates - preview will be rendered in RenderPreview
             _lastX = x;
             _lastY = y;
-            DrawRectangle(_startX, _startY, _lastX, _lastY, _drawColor);
         }
 
         public override void OnMouseUp(int x, int y)
         {
             if (!_isDrawing) return;
 
-            // Draw final rectangle
-            DrawRectangle(_startX, _startY, x, y, _drawColor);
+            // Draw final rectangle to actual grid
+            DrawRectangleToGrid(_startX, _startY, x, y, _drawColor);
             _isDrawing = false;
         }
 
-        private void DrawRectangle(int x0, int y0, int x1, int y1, MediaColor color)
+        public override void RenderPreview(WriteableBitmap previewBitmap, int pixelSize)
+        {
+            if (!_isDrawing) return;
+
+            previewBitmap.Lock();
+            try
+            {
+                unsafe
+                {
+                    byte* buffer = (byte*)previewBitmap.BackBuffer;
+                    int stride = previewBitmap.BackBufferStride;
+                    int bytesPerPixel = 4;
+
+                    // Normalize coordinates
+                    int minX = System.Math.Min(_startX, _lastX);
+                    int maxX = System.Math.Max(_startX, _lastX);
+                    int minY = System.Math.Min(_startY, _lastY);
+                    int maxY = System.Math.Max(_startY, _lastY);
+
+                    // Draw rectangle outline to preview bitmap
+                    for (int x = minX; x <= maxX; x++)
+                    {
+                        if (x >= 0 && x < Grid.Width)
+                        {
+                            if (minY >= 0 && minY < Grid.Height)
+                                DrawPixelScaled(buffer, stride, bytesPerPixel, x, minY, pixelSize, _drawColor);
+                            if (maxY >= 0 && maxY < Grid.Height)
+                                DrawPixelScaled(buffer, stride, bytesPerPixel, x, maxY, pixelSize, _drawColor);
+                        }
+                    }
+
+                    for (int y = minY; y <= maxY; y++)
+                    {
+                        if (y >= 0 && y < Grid.Height)
+                        {
+                            if (minX >= 0 && minX < Grid.Width)
+                                DrawPixelScaled(buffer, stride, bytesPerPixel, minX, y, pixelSize, _drawColor);
+                            if (maxX >= 0 && maxX < Grid.Width)
+                                DrawPixelScaled(buffer, stride, bytesPerPixel, maxX, y, pixelSize, _drawColor);
+                        }
+                    }
+                }
+
+                int width = Grid.Width * pixelSize;
+                int height = Grid.Height * pixelSize;
+                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+            }
+            finally
+            {
+                previewBitmap.Unlock();
+            }
+        }
+
+        private void DrawRectangleToGrid(int x0, int y0, int x1, int y1, MediaColor color)
         {
             // Normalize coordinates
             int minX = System.Math.Min(x0, x1);
@@ -74,6 +125,30 @@ namespace MSPaint.Tools
                     Grid.SetPixel(minX, y, color); // Left edge
                 if (IsValidPosition(maxX, y))
                     Grid.SetPixel(maxX, y, color); // Right edge
+            }
+        }
+
+        private unsafe void DrawPixelScaled(byte* buffer, int stride, int bytesPerPixel, int gridX, int gridY, int pixelSize, MediaColor color)
+        {
+            int width = Grid.Width * pixelSize;
+            int height = Grid.Height * pixelSize;
+
+            for (int py = 0; py < pixelSize; py++)
+            {
+                for (int px = 0; px < pixelSize; px++)
+                {
+                    int x = gridX * pixelSize + px;
+                    int y = gridY * pixelSize + py;
+
+                    if (x < width && y < height)
+                    {
+                        int offset = y * stride + x * bytesPerPixel;
+                        buffer[offset] = color.B;     // Blue
+                        buffer[offset + 1] = color.G; // Green
+                        buffer[offset + 2] = color.R; // Red
+                        buffer[offset + 3] = color.A; // Alpha
+                    }
+                }
             }
         }
 

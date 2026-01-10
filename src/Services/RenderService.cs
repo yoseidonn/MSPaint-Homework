@@ -168,5 +168,89 @@ namespace MSPaint.Services
 
             return pixelData;
         }
+
+        // Updates an existing WriteableBitmap with new pixel data from PixelGrid
+        // This method reuses the bitmap instead of creating a new one, preventing memory leaks
+        public async Task UpdateBitmapAsync(WriteableBitmap bitmap, PixelGrid? grid)
+        {
+            if (bitmap == null || grid == null) return;
+
+            int width = grid.Width * grid.PixelSize;
+            int height = grid.Height * grid.PixelSize;
+            width = System.Math.Max(1, width);
+            height = System.Math.Max(1, height);
+
+            // Check if bitmap size matches - if not, caller should create new bitmap
+            if (bitmap.PixelWidth != width || bitmap.PixelHeight != height)
+                return;
+
+            int stride = bitmap.BackBufferStride;
+            int bytesPerPixel = 4; // PBGRA32 = 4 bytes per pixel
+            int totalBytes = stride * height;
+            int pixelSize = grid.PixelSize;
+
+            // For large canvases, prepare pixel data on background thread
+            bool useBackgroundThread = (width * height) > 1000000; // 1M pixels threshold
+            byte[]? pixelData = null;
+
+            if (useBackgroundThread)
+            {
+                // Prepare pixel data on background thread
+                pixelData = await Task.Run(() => PreparePixelData(grid, width, height, stride, bytesPerPixel, pixelSize));
+            }
+
+            // Update bitmap on UI thread
+            bitmap.Lock();
+            try
+            {
+                unsafe
+                {
+                    byte* buffer = (byte*)bitmap.BackBuffer;
+
+                    if (useBackgroundThread && pixelData != null)
+                    {
+                        // Copy prepared data to bitmap buffer
+                        System.Runtime.InteropServices.Marshal.Copy(pixelData, 0, (System.IntPtr)buffer, totalBytes);
+                    }
+                    else
+                    {
+                        // Small canvas: render directly on UI thread
+                        for (int gridY = 0; gridY < grid.Height; gridY++)
+                        {
+                            for (int gridX = 0; gridX < grid.Width; gridX++)
+                            {
+                                MediaColor pixelColor = grid.GetPixel(gridX, gridY);
+
+                                // Draw this pixel scaled by PixelSize
+                                for (int py = 0; py < pixelSize; py++)
+                                {
+                                    for (int px = 0; px < pixelSize; px++)
+                                    {
+                                        int x = gridX * pixelSize + px;
+                                        int y = gridY * pixelSize + py;
+
+                                        if (x < width && y < height)
+                                        {
+                                            int offset = y * stride + x * bytesPerPixel;
+                                            buffer[offset] = pixelColor.B;     // Blue
+                                            buffer[offset + 1] = pixelColor.G; // Green
+                                            buffer[offset + 2] = pixelColor.R; // Red
+                                            buffer[offset + 3] = pixelColor.A; // Alpha
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Mark the entire bitmap as dirty
+                bitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, width, height));
+            }
+            finally
+            {
+                bitmap.Unlock();
+            }
+        }
     }
 }
