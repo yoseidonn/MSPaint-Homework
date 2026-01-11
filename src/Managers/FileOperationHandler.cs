@@ -70,12 +70,12 @@ namespace MSPaint.Managers
                     }
                     else
                     {
-                        MessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        WpfMessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }

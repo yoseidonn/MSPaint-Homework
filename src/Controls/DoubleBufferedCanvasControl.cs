@@ -261,7 +261,7 @@ namespace MSPaint.Controls
             catch (Exception ex)
             {
                 Logger.Log($"ERROR: {ex.Message}");
-                MessageBox.Show(
+                WpfMessageBox.Show(
                     $"Error rendering canvas: {ex.Message}",
                     "Rendering Error",
                     MessageBoxButton.OK,

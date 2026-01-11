@@ -1,8 +1,10 @@
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MSPaint.Models;
+using WpfApplication = System.Windows.Application;
 
 namespace MSPaint.Controls.Helpers
 {
@@ -46,7 +48,7 @@ namespace MSPaint.Controls.Helpers
                 }
                 
                 // Create new bitmap on UI thread (must be on UI thread)
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                await WpfApplication.Current.Dispatcher.InvokeAsync(() =>
                 {
                     _cachedBitmap = new WriteableBitmap(
                         width, height, 96, 96, 
@@ -81,7 +83,7 @@ namespace MSPaint.Controls.Helpers
                     });
                 }
                 
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                await WpfApplication.Current.Dispatcher.InvokeAsync(() =>
                 {
                     _previewBitmap = new WriteableBitmap(
                         width, height, 96, 96,
@@ -100,7 +102,7 @@ namespace MSPaint.Controls.Helpers
         {
             if (_previewBitmap != null && frontImage != null)
             {
-                await Application.Current.Dispatcher.InvokeAsync(() =>
+                await WpfApplication.Current.Dispatcher.InvokeAsync(() =>
                 {
                     frontImage.Source = null;
                 });
