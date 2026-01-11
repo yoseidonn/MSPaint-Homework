@@ -149,11 +149,5 @@ namespace MSPaint.Tools
                     SetPixelWithTracking(maxX, y, color); // Right edge
             }
         }
-
-
-        private bool IsValidPosition(int x, int y)
-        {
-            return x >= 0 && x < Grid.Width && y >= 0 && y < Grid.Height;
-        }
     }
 }

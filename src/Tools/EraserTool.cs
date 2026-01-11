@@ -37,7 +37,7 @@ namespace MSPaint.Tools
             if (!_isDrawing) return;
 
             // Erase line from last position to current position
-            DrawLine(_lastX, _lastY, x, y);
+            DrawLine(_lastX, _lastY, x, y, _eraseColor);
             
             _lastX = x;
             _lastY = y;
@@ -54,46 +54,6 @@ namespace MSPaint.Tools
             }
 
             _isDrawing = false;
-        }
-
-        private void DrawLine(int x0, int y0, int x1, int y1)
-        {
-            // Simple line drawing using Bresenham's algorithm
-            int dx = System.Math.Abs(x1 - x0);
-            int dy = System.Math.Abs(y1 - y0);
-            int sx = x0 < x1 ? 1 : -1;
-            int sy = y0 < y1 ? 1 : -1;
-            int err = dx - dy;
-
-            int x = x0;
-            int y = y0;
-
-            while (true)
-            {
-                if (IsValidPosition(x, y))
-                {
-                    SetPixelWithTracking(x, y, _eraseColor);
-                }
-
-                if (x == x1 && y == y1) break;
-
-                int e2 = 2 * err;
-                if (e2 > -dy)
-                {
-                    err -= dy;
-                    x += sx;
-                }
-                if (e2 < dx)
-                {
-                    err += dx;
-                    y += sy;
-                }
-            }
-        }
-
-        private bool IsValidPosition(int x, int y)
-        {
-            return x >= 0 && x < Grid.Width && y >= 0 && y < Grid.Height;
         }
     }
 }

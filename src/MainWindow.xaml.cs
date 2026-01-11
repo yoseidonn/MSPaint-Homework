@@ -1,11 +1,11 @@
 using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Media;
 using MSPaint.Controls;
+using MSPaint.Managers;
+using MSPaint.Pages;
 using MSPaint.Tools;
-using MediaColor = System.Windows.Media.Color;
-using MediaColors = System.Windows.Media.Colors;
 
 namespace MSPaint
 {
@@ -15,10 +15,10 @@ namespace MSPaint
     public partial class MainWindow : Window
     {
         private Pages.DrawingPage? _drawingPage;
-        private MediaColor _primaryColor = MediaColors.Black;
-        private MediaColor _secondaryColor = MediaColors.White;
-        private System.Windows.Controls.Button? _selectedToolButton;
-        private string? _currentFilePath; // Track current file path for Save
+        private ToolManager? _toolManager;
+        private ColorManager? _colorManager;
+        private FileOperationHandler? _fileHandler;
+        private KeyboardShortcutHandler? _keyboardHandler;
 
         public MainWindow()
         {
@@ -29,6 +29,12 @@ namespace MSPaint
                 // At startup we mount the drawing page control into the CanvasHost
                 _drawingPage = new Pages.DrawingPage();
                 CanvasHost.Content = _drawingPage;
+
+                // Initialize managers
+                _toolManager = new ToolManager(this);
+                _colorManager = new ColorManager(this, _toolManager);
+                _fileHandler = new FileOperationHandler(this);
+                _keyboardHandler = new KeyboardShortcutHandler(this, _fileHandler);
             }
             catch (Exception ex)
             {
@@ -46,10 +52,10 @@ namespace MSPaint
             return _drawingPage;
         }
 
-        public async System.Threading.Tasks.Task InitializeCanvasAsync(Pages.CanvasSetupWindow setupWindow)
+        public async Task InitializeCanvasAsync(CanvasSetupWindow setupWindow)
         {
             // Wait for window to be fully rendered
-            await System.Threading.Tasks.Task.Delay(100);
+            await Task.Delay(100);
             
             if (setupWindow.LoadedGrid != null)
             {
@@ -71,362 +77,93 @@ namespace MSPaint
             }
         }
 
-        private MSPaint.Controls.DoubleBufferedCanvasControl? GetCanvasControl()
-        {
-            return _drawingPage?.GetCanvasControl();
-        }
-
-        private void SetTool(ITool tool)
-        {
-            var canvas = GetCanvasControl();
-            if (canvas != null)
-            {
-                canvas.SetTool(tool);
-            }
-        }
-
-        private void HighlightToolButton(System.Windows.Controls.Button button)
-        {
-            // Reset all tool buttons
-            EraserButton.Background = new SolidColorBrush(MediaColors.Transparent);
-            FillButton.Background = new SolidColorBrush(MediaColors.Transparent);
-            PencilButton.Background = new SolidColorBrush(MediaColors.Transparent);
-            RectangleButton.Background = new SolidColorBrush(MediaColors.Transparent);
-            EllipseButton.Background = new SolidColorBrush(MediaColors.Transparent);
-            TextButton.Background = new SolidColorBrush(MediaColors.Transparent);
-
-            // Highlight selected button
-            if (button != null)
-            {
-                button.Background = new SolidColorBrush(MediaColors.LightBlue);
-                _selectedToolButton = button;
-            }
-        }
-
-        private void UpdateToolColor(MediaColor color)
-        {
-            var canvas = GetCanvasControl();
-            if (canvas == null) return;
-
-            var currentTool = canvas.GetCurrentTool();
-            
-            // Update tool color if it has DrawColor or FillColor property
-            if (currentTool is PencilTool pencilTool)
-                pencilTool.DrawColor = color;
-            else if (currentTool is RectangleTool rectTool)
-                rectTool.DrawColor = color;
-            else if (currentTool is EllipseTool ellipseTool)
-                ellipseTool.DrawColor = color;
-            else if (currentTool is FillTool fillTool)
-                fillTool.FillColor = color;
-            else if (currentTool is TextTool textTool)
-                textTool.DrawColor = color;
-        }
-
         // Tool selection handlers
         private void PencilButton_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas?.PixelGrid != null)
-            {
-                var tool = new PencilTool(canvas.PixelGrid);
-                tool.DrawColor = _primaryColor;
-                SetTool(tool);
-                HighlightToolButton(PencilButton);
-            }
+            _toolManager?.SelectPencilTool(_colorManager?.PrimaryColor ?? System.Windows.Media.Colors.Black);
         }
 
         private void EraserButton_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas?.PixelGrid != null)
-            {
-                var tool = new EraserTool(canvas.PixelGrid);
-                tool.EraseColor = _secondaryColor;
-                SetTool(tool);
-                HighlightToolButton(EraserButton);
-            }
+            _toolManager?.SelectEraserTool(_colorManager?.SecondaryColor ?? System.Windows.Media.Colors.White);
         }
 
         private void FillButton_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas?.PixelGrid != null)
-            {
-                var tool = new FillTool(canvas.PixelGrid);
-                tool.FillColor = _primaryColor;
-                SetTool(tool);
-                HighlightToolButton(FillButton);
-            }
+            _toolManager?.SelectFillTool(_colorManager?.PrimaryColor ?? System.Windows.Media.Colors.Black);
         }
 
         private void RectangleButton_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas?.PixelGrid != null)
-            {
-                var tool = new RectangleTool(canvas.PixelGrid);
-                tool.DrawColor = _primaryColor;
-                SetTool(tool);
-                HighlightToolButton(RectangleButton);
-            }
+            _toolManager?.SelectRectangleTool(_colorManager?.PrimaryColor ?? System.Windows.Media.Colors.Black);
         }
 
         private void EllipseButton_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas?.PixelGrid != null)
-            {
-                var tool = new EllipseTool(canvas.PixelGrid);
-                tool.DrawColor = _primaryColor;
-                SetTool(tool);
-                HighlightToolButton(EllipseButton);
-            }
+            _toolManager?.SelectEllipseTool(_colorManager?.PrimaryColor ?? System.Windows.Media.Colors.Black);
         }
 
         private void TextButton_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas?.PixelGrid != null)
-            {
-                var tool = new TextTool(canvas.PixelGrid);
-                tool.DrawColor = _primaryColor;
-                tool.FontSize = 12; // Default font size
-                SetTool(tool);
-                HighlightToolButton(TextButton);
-            }
+            _toolManager?.SelectTextTool(_colorManager?.PrimaryColor ?? System.Windows.Media.Colors.Black);
         }
 
         // Color picker handlers
         private void PrimaryColorPreview_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            ShowColorPicker(true);
+            _colorManager?.ShowColorPicker(true);
         }
 
         private void SecondaryColorPreview_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            ShowColorPicker(false);
+            _colorManager?.ShowColorPicker(false);
         }
 
         private void ColorSwatch_Click(object sender, RoutedEventArgs e)
         {
             if (sender is System.Windows.Controls.Button button && button.Tag is string colorName)
             {
-                MediaColor color = GetColorByName(colorName);
-                _primaryColor = color;
-                UpdateColorPreview();
-                UpdateToolColor(color);
+                _colorManager?.HandleColorSwatchClick(colorName);
             }
-        }
-
-        private void ShowColorPicker(bool isPrimary)
-        {
-            var colorDialog = new System.Windows.Forms.ColorDialog
-            {
-                Color = System.Drawing.Color.FromArgb(
-                    isPrimary ? _primaryColor.A : _secondaryColor.A,
-                    isPrimary ? _primaryColor.R : _secondaryColor.R,
-                    isPrimary ? _primaryColor.G : _secondaryColor.G,
-                    isPrimary ? _primaryColor.B : _secondaryColor.B),
-                FullOpen = true
-            };
-
-            if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-            {
-                var color = colorDialog.Color;
-                var mediaColor = MediaColor.FromArgb(color.A, color.R, color.G, color.B);
-                
-                if (isPrimary)
-                {
-                    _primaryColor = mediaColor;
-                }
-                else
-                {
-                    _secondaryColor = mediaColor;
-                }
-
-                UpdateColorPreview();
-                if (isPrimary)
-                {
-                    UpdateToolColor(_primaryColor);
-                }
-            }
-        }
-
-        private void UpdateColorPreview()
-        {
-            PrimaryColorPreview.Background = new SolidColorBrush(_primaryColor);
-            SecondaryColorPreview.Background = new SolidColorBrush(_secondaryColor);
-        }
-
-        private MediaColor GetColorByName(string name)
-        {
-            return name switch
-            {
-                "Black" => MediaColors.Black,
-                "Gray" => MediaColors.Gray,
-                "White" => MediaColors.White,
-                "Red" => MediaColors.Red,
-                "Lime" => MediaColors.Lime,
-                "Cyan" => MediaColors.Cyan,
-                "Blue" => MediaColors.Blue,
-                _ => MediaColors.Black
-            };
         }
 
         // Keyboard shortcut handling
         private async void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas == null) return;
-
-            // Ctrl+Z: Undo
-            if (e.Key == Key.Z && Keyboard.Modifiers == ModifierKeys.Control)
+            if (_keyboardHandler != null)
             {
-                await canvas.Undo();
-                e.Handled = true;
-            }
-            // Ctrl+Shift+Z or Ctrl+Y: Redo
-            else if ((e.Key == Key.Z && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift)) ||
-                     (e.Key == Key.Y && Keyboard.Modifiers == ModifierKeys.Control))
-            {
-                await canvas.Redo();
-                e.Handled = true;
-            }
-            // Ctrl+S: Save
-            else if (e.Key == Key.S && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                FileSave_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // Ctrl+Shift+S: Save As
-            else if (e.Key == Key.S && Keyboard.Modifiers == (ModifierKeys.Control | ModifierKeys.Shift))
-            {
-                FileSaveAs_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // Ctrl+O: Open
-            else if (e.Key == Key.O && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                FileOpen_Click(this, new RoutedEventArgs());
-                e.Handled = true;
-            }
-            // Ctrl+N: New
-            else if (e.Key == Key.N && Keyboard.Modifiers == ModifierKeys.Control)
-            {
-                FileNew_Click(this, new RoutedEventArgs());
-                e.Handled = true;
+                await _keyboardHandler.HandleKeyDown(e);
             }
         }
 
         // File menu handlers
         private void FileNew_Click(object sender, RoutedEventArgs e)
         {
-            // Open canvas setup window for new canvas
-            var setupWindow = new Pages.CanvasSetupWindow();
-            if (setupWindow.ShowDialog() == true)
-            {
-                _currentFilePath = null; // Reset current file path for new canvas
-                _ = InitializeCanvasAsync(setupWindow);
-                UpdateWindowTitle(); // Update title to show "Untitled"
-            }
+            _fileHandler?.FileNew();
         }
 
         private async void FileOpen_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas == null) return;
-
-            var openDialog = new Microsoft.Win32.OpenFileDialog
+            if (_fileHandler != null)
             {
-                Filter = canvas.GetFileDialogFilter(),
-                Title = "Open Image File"
-            };
-
-            if (openDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    var ioService = new MSPaint.Services.ProjectIOService();
-                    var loadedGrid = await ioService.LoadAsync(openDialog.FileName);
-
-                    if (loadedGrid != null)
-                    {
-                        await canvas.InitializeCanvas(loadedGrid);
-                        _currentFilePath = openDialog.FileName;
-                        UpdateWindowTitle();
-                    }
-                    else
-                    {
-                        System.Windows.MessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                await _fileHandler.FileOpen();
             }
         }
 
         private async void FileSave_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas == null) return;
-
-            // If we have a current file path, save to it directly
-            if (!string.IsNullOrEmpty(_currentFilePath))
+            if (_fileHandler != null)
             {
-                try
-                {
-                    await canvas.SaveAsync(_currentFilePath);
-                    UpdateWindowTitle();
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            else
-            {
-                // No current file path, use Save As dialog
-                // After Save As, _currentFilePath will be set, so next Save will use it
-                FileSaveAs_Click(sender, e);
+                await _fileHandler.FileSave();
             }
         }
 
         private async void FileSaveAs_Click(object sender, RoutedEventArgs e)
         {
-            var canvas = GetCanvasControl();
-            if (canvas == null) return;
-
-            var saveDialog = new Microsoft.Win32.SaveFileDialog
+            if (_fileHandler != null)
             {
-                Filter = canvas.GetFileDialogFilter(),
-                Title = "Save Image As",
-                FileName = _currentFilePath ?? "Untitled.png"
-            };
-
-            if (saveDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    await canvas.SaveAsync(saveDialog.FileName);
-                    _currentFilePath = saveDialog.FileName;
-                    UpdateWindowTitle();
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                await _fileHandler.FileSaveAs();
             }
-        }
-
-        private void UpdateWindowTitle()
-        {
-            var fileName = string.IsNullOrEmpty(_currentFilePath) 
-                ? "Untitled" 
-                : System.IO.Path.GetFileName(_currentFilePath);
-            this.Title = $"MSPaint - {fileName}";
         }
     }
 }
