@@ -4,17 +4,27 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>MSPaint</RootNamespace>
     <AssemblyName>MSPaint</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    
+    <!-- Make all builds self-contained (includes .NET runtime) -->
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- App.xaml lives under src and is the application definition -->
+    <!-- App.xaml is the application definition -->
     <ApplicationDefinition Include="src\App.xaml" />
+  </ItemGroup>
 
-    <!-- other content under src -->
+  <ItemGroup>
+    <!-- Include other content files under src (exclude code and XAML files) -->
+    <!-- Note: .xaml files are automatically included as Page items by the SDK -->
+    <!-- .cs files are automatically included by the SDK -->
     <None Include="src\**\*.*" Exclude="src\**\*.cs;src\**\*.xaml" />
   </ItemGroup>
 

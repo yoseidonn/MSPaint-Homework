@@ -1,0 +1,70 @@
+<Window x:Class="MSPaint.Views.CanvasSetupDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="New Canvas" Height="450" Width="500" 
+        WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Row="0" FontSize="18" FontWeight="Bold" Margin="0,0,0,16">
+            Create New Canvas
+        </TextBlock>
+
+        <!-- Canvas Size -->
+        <TextBlock Grid.Row="1" Text="Canvas Size:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <Grid Grid.Row="2" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="20"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Width:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox Grid.Column="1" x:Name="WidthBox" Text="64" VerticalContentAlignment="Center"/>
+            <TextBlock Grid.Column="2" Text="×" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <TextBlock Grid.Column="3" Text="Height:" VerticalAlignment="Center" Margin="8,0,8,0"/>
+            <TextBox Grid.Column="4" x:Name="HeightBox" Text="64" VerticalContentAlignment="Center"/>
+        </Grid>
+
+        <!-- Pixel Size -->
+        <Grid Grid.Row="3" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Pixel Size:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox Grid.Column="1" x:Name="PixelSizeBox" Text="8" VerticalContentAlignment="Center"/>
+        </Grid>
+
+        <!-- Background Options -->
+        <TextBlock Grid.Row="4" Text="Background:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <StackPanel Grid.Row="5" Margin="0,0,0,16">
+            <CheckBox x:Name="TransparentCheckBox" Content="Transparent Background" 
+                      Margin="0,0,0,8" Checked="TransparentCheckBox_Checked" Unchecked="TransparentCheckBox_Unchecked"/>
+            <StackPanel x:Name="ColorPickerPanel" Orientation="Horizontal">
+                <TextBlock Text="Background Color:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <Border x:Name="ColorPreview" Width="40" Height="24" BorderBrush="Gray" BorderThickness="1" 
+                        Background="White" Margin="0,0,8,0" MouseLeftButtonDown="ColorPreview_MouseLeftButtonDown"/>
+                <Button Content="Choose..." Padding="8,4" Click="ChooseColorButton_Click"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Width="100" Margin="4" x:Name="OkButton" Content="OK" Click="OkButton_Click" IsDefault="True"/>
+            <Button Width="100" Margin="4" x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
