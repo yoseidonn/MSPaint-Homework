@@ -85,5 +85,9 @@ namespace MSPaint.Services
 
         public bool CanUndo => _undoStack.Count > 0;
         public bool CanRedo => _redoStack.Count > 0;
+
+        // Debug methods
+        public int GetUndoStackCount() => _undoStack.Count;
+        public int GetRedoStackCount() => _redoStack.Count;
     }
 }

@@ -1,5 +1,4 @@
-using MSPaint.Models;
-using MSPaint.Pages;
+using MSPaint.Core;
 using System;
 using System.Windows;
 using System.Windows.Media;
@@ -9,7 +8,10 @@ using MediaColors = System.Windows.Media.Colors;
 
 namespace MSPaint.Tools
 {
-    public class TextTool : BaseTool
+    /// <summary>
+    /// Text tool - renders text to the canvas
+    /// </summary>
+    public class TextTool : ToolBase
     {
         private MediaColor _drawColor = MediaColors.Black;
         private int _fontSize = 12;
@@ -37,23 +39,9 @@ namespace MSPaint.Tools
 
         public override void OnMouseDown(int x, int y)
         {
-            // Note: StartCollectingChanges() is called by DoubleBufferedCanvasControl before OnMouseDown
-            
             // Show text input dialog
-            var dialog = new TextInputDialog(_fontSize);
-            dialog.Owner = System.Windows.Application.Current.MainWindow;
-            
-            if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.Text))
-            {
-                // Update font size from dialog
-                _fontSize = dialog.FontSize;
-
-                // Render text to grid (changes are tracked via SetPixelWithTracking)
-                RenderTextToGrid(x, y, dialog.Text, _fontSize);
-
-                // Note: StopCollectingChanges() will be called by DoubleBufferedCanvasControl in MouseUp
-                // If user cancelled, no changes were made, so StopCollectingChanges() will return empty/null list
-            }
+            // Note: Dialog will be shown from ViewModel/View layer
+            // This method will be called after dialog returns
         }
 
         public override void OnMouseMove(int x, int y)
@@ -66,7 +54,11 @@ namespace MSPaint.Tools
             // Not used for text tool
         }
 
-        private void RenderTextToGrid(int startX, int startY, string text, int fontSize)
+        /// <summary>
+        /// Render text to grid at specified position
+        /// Called from ViewModel after text dialog returns
+        /// </summary>
+        public void RenderTextToGrid(int startX, int startY, string text, int fontSize)
         {
             if (string.IsNullOrEmpty(text)) return;
 
@@ -74,10 +66,10 @@ namespace MSPaint.Tools
             {
                 // Get PixelsPerDip from main window (for proper DPI scaling)
                 double pixelsPerDip = 1.0;
-                var mainWindow = System.Windows.Application.Current?.MainWindow;
+                var mainWindow = Application.Current?.MainWindow;
                 if (mainWindow != null)
                 {
-                    var source = System.Windows.PresentationSource.FromVisual(mainWindow);
+                    var source = PresentationSource.FromVisual(mainWindow);
                     if (source != null)
                     {
                         var dpi = source.CompositionTarget.TransformToDevice;
@@ -85,13 +77,12 @@ namespace MSPaint.Tools
                     }
                 }
 
-                // Create FormattedText with PixelsPerDip (newer API)
-                // Signature: (string, CultureInfo, FlowDirection, Typeface, double emSize, Brush, NumberSubstitution, TextFormattingMode, double pixelsPerDip)
+                // Create FormattedText with PixelsPerDip
                 var formattedText = new FormattedText(
                     text,
                     System.Globalization.CultureInfo.CurrentCulture,
-                    System.Windows.FlowDirection.LeftToRight,
-                    new Typeface(new System.Windows.Media.FontFamily(_fontFamily), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                    FlowDirection.LeftToRight,
+                    new Typeface(new FontFamily(_fontFamily), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
                     fontSize,
                     new SolidColorBrush(_drawColor),
                     null,
@@ -117,7 +108,7 @@ namespace MSPaint.Tools
                 using (var drawingContext = drawingVisual.RenderOpen())
                 {
                     // Draw text with small offset to avoid clipping
-                    drawingContext.DrawText(formattedText, new System.Windows.Point(1, 1));
+                    drawingContext.DrawText(formattedText, new Point(1, 1));
                 }
                 renderTarget.Render(drawingVisual);
 

@@ -1,21 +1,20 @@
 using System.Windows;
 using System.Windows.Media;
-using Microsoft.Win32;
-using MSPaint.Models;
-using MSPaint.Services;
+using MSPaint.Core;
 using MediaColor = System.Windows.Media.Color;
-using WpfMessageBox = System.Windows.MessageBox;
-using WpfOpenFileDialog = Microsoft.Win32.OpenFileDialog;
+using MediaColors = System.Windows.Media.Colors;
 
-namespace MSPaint.Pages
+namespace MSPaint.Views
 {
-    public partial class CanvasSetupWindow : Window
+    /// <summary>
+    /// Interaction logic for CanvasSetupDialog.xaml
+    /// </summary>
+    public partial class CanvasSetupDialog : Window
     {
         public CanvasSettings? Result { get; private set; }
-        public PixelGrid? LoadedGrid { get; private set; }
         private MediaColor _selectedColor = Colors.White;
 
-        public CanvasSetupWindow()
+        public CanvasSetupDialog()
         {
             InitializeComponent();
             ColorPreview.Background = new SolidColorBrush(_selectedColor);
@@ -25,49 +24,6 @@ namespace MSPaint.Pages
         private void UpdateColorPickerEnabled()
         {
             ColorPickerPanel.IsEnabled = TransparentCheckBox.IsChecked != true;
-        }
-
-        private async void LoadFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            var ioService = new ProjectIOService();
-            var openDialog = new WpfOpenFileDialog
-            {
-                Filter = ioService.GetFileDialogFilter(),
-                Title = "Load Canvas from File"
-            };
-
-            if (openDialog.ShowDialog() == true)
-            {
-                try
-                {
-                    // Get current settings from UI for PixelSize
-                    var settings = new CanvasSettings
-                    {
-                        Width = int.TryParse(WidthBox.Text, out int w) ? w : 512,
-                        Height = int.TryParse(HeightBox.Text, out int h) ? h : 512,
-                        PixelSize = int.TryParse(PixelSizeBox.Text, out int ps) ? ps : 4,
-                        Background = _selectedColor,
-                        Transparent = TransparentCheckBox.IsChecked == true
-                    };
-
-                    LoadedGrid = await ioService.LoadAsync(openDialog.FileName, settings);
-                    
-                    if (LoadedGrid != null)
-                    {
-                        // Close dialog and return loaded grid
-                        DialogResult = true;
-                        Close();
-                    }
-                    else
-                    {
-                        WpfMessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    WpfMessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
         }
 
         private void TransparentCheckBox_Checked(object sender, RoutedEventArgs e)
@@ -133,7 +89,7 @@ namespace MSPaint.Pages
             }
             else
             {
-                WpfMessageBox.Show("Please enter valid numbers for width, height, and pixel size.", 
+                MessageBox.Show("Please enter valid numbers for width, height, and pixel size.", 
                     "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }

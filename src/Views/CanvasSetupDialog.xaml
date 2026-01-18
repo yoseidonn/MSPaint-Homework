@@ -1,4 +1,4 @@
-<Window x:Class="MSPaint.Pages.CanvasSetupWindow"
+<Window x:Class="MSPaint.Views.CanvasSetupDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="New Canvas" Height="450" Width="500" 
@@ -21,15 +21,9 @@
             Create New Canvas
         </TextBlock>
 
-        <!-- Load from file option -->
-        <Button Grid.Row="1" x:Name="LoadFileButton" Content="Load from File..." 
-                HorizontalAlignment="Stretch" Margin="0,0,0,16" Padding="8" Click="LoadFileButton_Click"/>
-
-        <Separator Grid.Row="2" Margin="0,0,0,16"/>
-
         <!-- Canvas Size -->
-        <TextBlock Grid.Row="3" Text="Canvas Size:" FontWeight="SemiBold" Margin="0,0,0,8"/>
-        <Grid Grid.Row="4" Margin="0,0,0,16">
+        <TextBlock Grid.Row="1" Text="Canvas Size:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <Grid Grid.Row="2" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -45,7 +39,7 @@
         </Grid>
 
         <!-- Pixel Size -->
-        <Grid Grid.Row="5" Margin="0,0,0,16">
+        <Grid Grid.Row="3" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
@@ -55,8 +49,8 @@
         </Grid>
 
         <!-- Background Options -->
-        <TextBlock Grid.Row="6" Text="Background:" FontWeight="SemiBold" Margin="0,0,0,8"/>
-        <StackPanel Grid.Row="7" Margin="0,0,0,16">
+        <TextBlock Grid.Row="4" Text="Background:" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <StackPanel Grid.Row="5" Margin="0,0,0,16">
             <CheckBox x:Name="TransparentCheckBox" Content="Transparent Background" 
                       Margin="0,0,0,8" Checked="TransparentCheckBox_Checked" Unchecked="TransparentCheckBox_Unchecked"/>
             <StackPanel x:Name="ColorPickerPanel" Orientation="Horizontal">
@@ -68,7 +62,7 @@
         </StackPanel>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="8" Orientation="Horizontal" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Width="100" Margin="4" x:Name="OkButton" Content="OK" Click="OkButton_Click" IsDefault="True"/>
             <Button Width="100" Margin="4" x:Name="CancelButton" Content="Cancel" Click="CancelButton_Click" IsCancel="True"/>
         </StackPanel>

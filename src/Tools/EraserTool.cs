@@ -1,11 +1,14 @@
-using MSPaint.Models;
+using MSPaint.Core;
 using System.Windows.Media;
 using MediaColor = System.Windows.Media.Color;
 using MediaColors = System.Windows.Media.Colors;
 
 namespace MSPaint.Tools
 {
-    public class EraserTool : BaseTool
+    /// <summary>
+    /// Eraser tool - erases by drawing with erase color (usually white)
+    /// </summary>
+    public class EraserTool : ToolBase
     {
         private bool _isDrawing;
         private int _lastX, _lastY;

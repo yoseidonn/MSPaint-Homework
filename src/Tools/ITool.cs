@@ -1,8 +1,10 @@
-using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace MSPaint.Tools
 {
+    /// <summary>
+    /// Interface for drawing tools
+    /// </summary>
     public interface ITool
     {
         void OnMouseDown(int x, int y);

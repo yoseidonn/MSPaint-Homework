@@ -1,4 +1,4 @@
-using MSPaint.Models;
+using MSPaint.Core;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MediaColor = System.Windows.Media.Color;
@@ -6,7 +6,10 @@ using MediaColors = System.Windows.Media.Colors;
 
 namespace MSPaint.Tools
 {
-    public class RectangleTool : BaseTool
+    /// <summary>
+    /// Rectangle tool - draws rectangle outlines
+    /// </summary>
+    public class RectangleTool : ToolBase
     {
         private MediaColor _drawColor = MediaColors.Black;
         private bool _isDrawing;

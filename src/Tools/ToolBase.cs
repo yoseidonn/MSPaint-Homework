@@ -1,12 +1,16 @@
-using MSPaint.Models;
 using System.Collections.Generic;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using MSPaint.Core;
 using MediaColor = System.Windows.Media.Color;
 
 namespace MSPaint.Tools
 {
-    public abstract class BaseTool : ITool
+    /// <summary>
+    /// Base class for all drawing tools
+    /// Provides common functionality like change tracking and line drawing
+    /// </summary>
+    public abstract class ToolBase : ITool
     {
         protected PixelGrid Grid;
         
@@ -14,7 +18,7 @@ namespace MSPaint.Tools
         protected List<(int x, int y, MediaColor oldColor, MediaColor newColor)>? _pixelChanges;
         protected bool _isCollectingChanges = false;
 
-        public BaseTool(PixelGrid grid)
+        public ToolBase(PixelGrid grid)
         {
             Grid = grid;
         }

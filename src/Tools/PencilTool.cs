@@ -1,12 +1,14 @@
-using MSPaint.Models;
+using MSPaint.Core;
 using System.Windows.Media;
 using MediaColor = System.Windows.Media.Color;
 using MediaColors = System.Windows.Media.Colors;
 
-
 namespace MSPaint.Tools
 {
-    public class PencilTool : BaseTool
+    /// <summary>
+    /// Pencil tool - draws freehand lines
+    /// </summary>
+    public class PencilTool : ToolBase
     {
         private MediaColor _drawColor = MediaColors.Black;
         private bool _isDrawing;

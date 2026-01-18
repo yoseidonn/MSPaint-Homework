@@ -2,13 +2,16 @@ using System;
 using System.Windows.Media;
 using MediaColor = System.Windows.Media.Color;
 
-namespace MSPaint.Models
+namespace MSPaint.Core
 {
+    /// <summary>
+    /// Pixel grid - stores pixel data as a 2D array of colors
+    /// PixelSize is NOT stored here - it's only used in rendering/view layer
+    /// </summary>
     public class PixelGrid
     {
         public int Width { get; }
         public int Height { get; }
-        public int PixelSize { get; }
 
         private MediaColor[,] _pixels;
         
@@ -20,16 +23,23 @@ namespace MSPaint.Models
         private bool _isDirty = false;
         private readonly object _dirtyLock = new object();
 
-        public PixelGrid(int width, int height, int pixelSize)
+        public PixelGrid(int width, int height)
         {
+            if (width <= 0 || height <= 0)
+                throw new ArgumentException("Width and height must be greater than 0");
+            
             Width = width;
             Height = height;
-            PixelSize = pixelSize;
             _pixels = new MediaColor[width, height];
             MarkAllDirty(); // Initial state: everything needs rendering
         }
 
-        public MediaColor GetPixel(int x, int y) => _pixels[x, y];
+        public MediaColor GetPixel(int x, int y)
+        {
+            if (x < 0 || x >= Width || y < 0 || y >= Height)
+                return MediaColor.FromArgb(0, 0, 0, 0); // Transparent for out-of-bounds
+            return _pixels[x, y];
+        }
         
         public void SetPixel(int x, int y, MediaColor c)
         {

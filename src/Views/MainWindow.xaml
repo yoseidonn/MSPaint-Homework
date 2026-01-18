@@ -1,27 +1,28 @@
-<Window x:Class="MSPaint.MainWindow"
+<Window x:Class="MSPaint.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MSPaint"
-        mc:Ignorable="d"
+        xmlns:canvas="clr-namespace:MSPaint.Canvas"
+        xmlns:vm="clr-namespace:MSPaint.ViewModels"
         Title="MSPaint" Height="600" Width="1000"
-        KeyDown="Window_KeyDown">
+        Focusable="True"
+        WindowStyle="SingleBorderWindow">
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
     <DockPanel LastChildFill="True">
         <!-- Top menu -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_New" Click="FileNew_Click" InputGestureText="Ctrl+N"/>
-                <MenuItem Header="_Open" Click="FileOpen_Click" InputGestureText="Ctrl+O"/>
+                <MenuItem Header="_New" Command="{Binding FileNewCommand}" InputGestureText="Ctrl+N"/>
+                <MenuItem Header="_Open" Command="{Binding FileOpenCommand}" InputGestureText="Ctrl+O"/>
                 <Separator/>
-                <MenuItem Header="_Save" Click="FileSave_Click" InputGestureText="Ctrl+S"/>
-                <MenuItem Header="Save _As" Click="FileSaveAs_Click" InputGestureText="Ctrl+Shift+S"/>
+                <MenuItem Header="_Save" Command="{Binding FileSaveCommand}" InputGestureText="Ctrl+S"/>
+                <MenuItem Header="Save _As" Command="{Binding FileSaveAsCommand}" InputGestureText="Ctrl+Shift+S"/>
             </MenuItem>
-            <MenuItem Header="_Edit"/>
-            <MenuItem Header="_View"/>
-            <MenuItem Header="_Image"/>
-            <MenuItem Header="_Colors"/>
-            <MenuItem Header="_Help"/>
+            <MenuItem Header="_Edit">
+                <MenuItem Header="_Undo" Command="{Binding Canvas.UndoCommand}" InputGestureText="Ctrl+Z"/>
+                <MenuItem Header="_Redo" Command="{Binding Canvas.RedoCommand}" InputGestureText="Ctrl+Y"/>
+            </MenuItem>
         </Menu>
 
         <!-- Bottom color bar -->
@@ -30,9 +31,9 @@
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
                     <!-- Primary/secondary color previews -->
                     <StackPanel Orientation="Vertical" Margin="4" Width="40" HorizontalAlignment="Left">
-                        <Border x:Name="PrimaryColorPreview" Background="Black" Height="20" BorderBrush="Gray" BorderThickness="1" 
+                        <Border x:Name="PrimaryColorPreview" Background="{Binding PrimaryColor}" Height="20" BorderBrush="Gray" BorderThickness="1" 
                                 MouseLeftButtonDown="PrimaryColorPreview_MouseLeftButtonDown" Cursor="Hand"/>
-                        <Border x:Name="SecondaryColorPreview" Background="White" Height="20" BorderBrush="Gray" BorderThickness="1" Margin="0,2,0,0"
+                        <Border x:Name="SecondaryColorPreview" Background="{Binding SecondaryColor}" Height="20" BorderBrush="Gray" BorderThickness="1" Margin="0,2,0,0"
                                 MouseLeftButtonDown="SecondaryColorPreview_MouseLeftButtonDown" Cursor="Hand"/>
                     </StackPanel>
 
@@ -65,14 +66,14 @@
             <!-- Left vertical toolbar -->
             <Border Grid.Column="0" Background="#FFF0EFEF" BorderBrush="#FFDADADA" BorderThickness="1" Padding="6">
                 <StackPanel>
-                    <!-- Tool buttons: text only -->
-                    <Button x:Name="EraserButton" Content="Eraser" Width="60" Height="30" Margin="0,2" Click="EraserButton_Click" FontSize="10"/>
-                    <Button x:Name="FillButton" Content="Fill" Width="60" Height="30" Margin="0,2" Click="FillButton_Click" FontSize="10"/>
-                    <Button x:Name="PencilButton" Content="Pencil" Width="60" Height="30" Margin="0,2" Click="PencilButton_Click" FontSize="10"/>
+                    <!-- Tool buttons -->
+                    <Button Content="Pencil" Width="60" Height="30" Margin="0,2" Click="ToolButton_Click" Tag="Pencil" FontSize="10"/>
+                    <Button Content="Eraser" Width="60" Height="30" Margin="0,2" Click="ToolButton_Click" Tag="Eraser" FontSize="10"/>
+                    <Button Content="Fill" Width="60" Height="30" Margin="0,2" Click="ToolButton_Click" Tag="Fill" FontSize="10"/>
                     <Separator Margin="0,6"/>
-                    <Button x:Name="RectangleButton" Content="Rectangle" Width="60" Height="30" Margin="0,2" Click="RectangleButton_Click" FontSize="10"/>
-                    <Button x:Name="EllipseButton" Content="Ellipse" Width="60" Height="30" Margin="0,2" Click="EllipseButton_Click" FontSize="10"/>
-                    <Button x:Name="TextButton" Content="Text" Width="60" Height="30" Margin="0,2" Click="TextButton_Click" FontSize="10"/>
+                    <Button Content="Rectangle" Width="60" Height="30" Margin="0,2" Click="ToolButton_Click" Tag="Rectangle" FontSize="10"/>
+                    <Button Content="Ellipse" Width="60" Height="30" Margin="0,2" Click="ToolButton_Click" Tag="Ellipse" FontSize="10"/>
+                    <Button Content="Text" Width="60" Height="30" Margin="0,2" Click="ToolButton_Click" Tag="Text" FontSize="10"/>
                 </StackPanel>
             </Border>
 
@@ -80,8 +81,8 @@
             <Border Grid.Column="1" Margin="8" BorderBrush="Gray" BorderThickness="1" Background="#FFE0E0E0">
                 <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                               HorizontalContentAlignment="Left" VerticalContentAlignment="Top">
-                    <!-- Canvas placeholder: replaced at runtime with DoubleBufferedCanvasControl -->
-                    <ContentControl x:Name="CanvasHost" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                    <canvas:CanvasControl x:Name="CanvasControl" HorizontalAlignment="Left" VerticalAlignment="Top"
+                                          MouseLeftButtonDown="CanvasControl_MouseLeftButtonDown"/>
                 </ScrollViewer>
             </Border>
         </Grid>

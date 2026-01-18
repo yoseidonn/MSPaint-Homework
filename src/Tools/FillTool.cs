@@ -1,4 +1,4 @@
-using MSPaint.Models;
+using MSPaint.Core;
 using System.Collections.Generic;
 using System.Windows.Media;
 using MediaColor = System.Windows.Media.Color;
@@ -6,7 +6,10 @@ using MediaColors = System.Windows.Media.Colors;
 
 namespace MSPaint.Tools
 {
-    public class FillTool : BaseTool
+    /// <summary>
+    /// Fill tool - flood fills connected regions
+    /// </summary>
+    public class FillTool : ToolBase
     {
         private MediaColor _fillColor = MediaColors.Black;
 
@@ -59,13 +62,11 @@ namespace MSPaint.Tools
 
                 foreach (var (nx, ny) in neighbors)
                 {
-                    if (IsValidPosition(nx, ny) && !visited.Contains((nx, ny)))
+                    if (IsValidPosition(nx, ny) && !visited.Contains((nx, ny))
+                        && Grid.GetPixel(nx, ny) == targetColor)
                     {
-                        if (Grid.GetPixel(nx, ny) == targetColor)
-                        {
-                            queue.Enqueue((nx, ny));
-                            visited.Add((nx, ny));
-                        }
+                        queue.Enqueue((nx, ny));
+                        visited.Add((nx, ny));
                     }
                 }
             }

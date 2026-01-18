@@ -1,0 +1,18 @@
+Models
+	Data tutan classlar, kısacası model işte
+
+Services
+	Bağımsız/domain spesific iş yapan şeyler. File işleri için FileService, render için RenderService etc.
+
+Managers:
+	UI objelerini, servisleri ve modelleri kullanarak uygulamayı koordine eder. Mesela ToolManager, SelectionManager etc.
+
+Controllers:
+	Mouse ve keyboard eventleri alıp gereken servis + manager akışına çeviren kontolcüler.
+
+Resources:
+	Statik nesneler, genelde img dosyaları, font dosyaları ya da style dosyaları olur ama projede kullanmıyoruz.
+
+Utisl:
+	Küçük yardımcı fonksiyonlar.
+

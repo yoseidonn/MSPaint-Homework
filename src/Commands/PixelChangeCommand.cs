@@ -1,6 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
-using MSPaint.Models;
+using MSPaint.Core;
 using System.Windows.Media;
 using MediaColor = System.Windows.Media.Color;
 
@@ -10,13 +9,13 @@ namespace MSPaint.Commands
     /// Command that tracks pixel changes for a drawing stroke
     /// Stores only changed pixels (x, y, oldColor, newColor) for memory efficiency
     /// </summary>
-    public class DrawCommand : ICommand
+    public class PixelChangeCommand : ICommand
     {
         private readonly PixelGrid _grid;
         private readonly List<(int x, int y, MediaColor oldColor, MediaColor newColor)> _pixelChanges;
         private bool _isExecuted;
 
-        public DrawCommand(PixelGrid grid, List<(int x, int y, MediaColor oldColor, MediaColor newColor)> pixelChanges)
+        public PixelChangeCommand(PixelGrid grid, List<(int x, int y, MediaColor oldColor, MediaColor newColor)>? pixelChanges)
         {
             _grid = grid;
             _pixelChanges = pixelChanges ?? new List<(int, int, MediaColor, MediaColor)>();
