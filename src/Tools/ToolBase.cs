@@ -16,6 +16,8 @@ namespace MSPaint.Tools
         
         // Pixel change collection for undo/redo
         protected List<(int x, int y, MediaColor oldColor, MediaColor newColor)>? _pixelChanges;
+        // Dictionary for fast lookup of pixel changes (optimization for FillTool)
+        protected System.Collections.Generic.Dictionary<(int x, int y), int>? _pixelChangeIndex;
         protected bool _isCollectingChanges = false;
 
         public ToolBase(PixelGrid grid)
@@ -36,6 +38,7 @@ namespace MSPaint.Tools
         public virtual void StartCollectingChanges()
         {
             _pixelChanges = new List<(int, int, MediaColor, MediaColor)>();
+            _pixelChangeIndex = new System.Collections.Generic.Dictionary<(int x, int y), int>();
             _isCollectingChanges = true;
         }
 
@@ -47,6 +50,7 @@ namespace MSPaint.Tools
             _isCollectingChanges = false;
             var changes = _pixelChanges;
             _pixelChanges = null;
+            _pixelChangeIndex = null;
             return changes;
         }
 
@@ -62,20 +66,22 @@ namespace MSPaint.Tools
             // Only track if color actually changes
             if (oldColor != newColor)
             {
-                if (_isCollectingChanges && _pixelChanges != null)
+                if (_isCollectingChanges && _pixelChanges != null && _pixelChangeIndex != null)
                 {
-                    // Check if this pixel was already changed in this stroke
-                    var existing = _pixelChanges.FindIndex(p => p.x == x && p.y == y);
-                    if (existing >= 0)
+                    var key = (x, y);
+                    // Check if this pixel was already changed in this stroke (fast lookup)
+                    if (_pixelChangeIndex.TryGetValue(key, out int existingIndex))
                     {
                         // Update existing entry - keep original oldColor, update newColor
-                        var existingChange = _pixelChanges[existing];
-                        _pixelChanges[existing] = (x, y, existingChange.oldColor, newColor);
+                        var existingChange = _pixelChanges[existingIndex];
+                        _pixelChanges[existingIndex] = (x, y, existingChange.oldColor, newColor);
                     }
                     else
                     {
                         // New pixel change
+                        int newIndex = _pixelChanges.Count;
                         _pixelChanges.Add((x, y, oldColor, newColor));
+                        _pixelChangeIndex[key] = newIndex;
                     }
                 }
 
