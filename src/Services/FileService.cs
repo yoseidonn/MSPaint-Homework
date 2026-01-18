@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MSPaint.Core;
 
@@ -70,7 +71,7 @@ namespace MSPaint.Services
                     if (bitmapSource == null) return null;
 
                     // Convert to Pbgra32 format for consistent pixel access
-                    var convertedBitmap = new FormatConvertedBitmap(bitmapSource, PixelFormats.Pbgra32, null, 0);
+                    BitmapSource convertedBitmap = new FormatConvertedBitmap(bitmapSource, PixelFormats.Pbgra32, null, 0);
                     convertedBitmap.Freeze();
 
                     // Scale down if pixelSize > 1 (load at 1:1, then scale down)

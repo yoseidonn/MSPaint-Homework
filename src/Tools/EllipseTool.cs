@@ -56,6 +56,23 @@ namespace MSPaint.Tools
         {
             if (!_isDrawing) return;
 
+            // Calculate center and radii (outside unsafe block)
+            int centerX = (_startX + _lastX) / 2;
+            int centerY = (_startY + _lastY) / 2;
+            int radiusX = System.Math.Abs(_lastX - _startX) / 2;
+            int radiusY = System.Math.Abs(_lastY - _startY) / 2;
+
+            // Calculate bounding box for dirty region
+            int minX = System.Math.Min(_startX, _lastX);
+            int maxX = System.Math.Max(_startX, _lastX);
+            int minY = System.Math.Min(_startY, _lastY);
+            int maxY = System.Math.Max(_startY, _lastY);
+            
+            int dirtyMinX = System.Math.Max(0, minX - radiusX - 1);
+            int dirtyMaxX = System.Math.Min(Grid.Width - 1, maxX + radiusX + 1);
+            int dirtyMinY = System.Math.Max(0, minY - radiusY - 1);
+            int dirtyMaxY = System.Math.Min(Grid.Height - 1, maxY + radiusY + 1);
+
             previewBitmap.Lock();
             try
             {
@@ -65,11 +82,22 @@ namespace MSPaint.Tools
                     int stride = previewBitmap.BackBufferStride;
                     int bytesPerPixel = 4;
 
-                    // Calculate center and radii
-                    int centerX = (_startX + _lastX) / 2;
-                    int centerY = (_startY + _lastY) / 2;
-                    int radiusX = System.Math.Abs(_lastX - _startX) / 2;
-                    int radiusY = System.Math.Abs(_lastY - _startY) / 2;
+                    // First, restore the grid pixels in the preview area (clear previous preview)
+                    for (int y = dirtyMinY; y <= dirtyMaxY; y++)
+                    {
+                        for (int x = dirtyMinX; x <= dirtyMaxX; x++)
+                        {
+                            if (x >= 0 && x < Grid.Width && y >= 0 && y < Grid.Height)
+                            {
+                                MediaColor gridColor = Grid.GetPixel(x, y);
+                                int offset = y * stride + x * bytesPerPixel;
+                                buffer[offset] = gridColor.B;
+                                buffer[offset + 1] = gridColor.G;
+                                buffer[offset + 2] = gridColor.R;
+                                buffer[offset + 3] = gridColor.A;
+                            }
+                        }
+                    }
 
                     if (radiusX == 0 && radiusY == 0)
                     {
@@ -85,7 +113,8 @@ namespace MSPaint.Tools
                     }
                     else
                     {
-                        // Draw ellipse using midpoint algorithm (1:1 mapping)
+                        // Draw ellipse outline only using midpoint algorithm (1:1 mapping)
+                        // Use more angles for smoother ellipse
                         for (int angle = 0; angle < 360; angle++)
                         {
                             double radians = angle * System.Math.PI / 180.0;
@@ -104,7 +133,10 @@ namespace MSPaint.Tools
                     }
                 }
 
-                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, Grid.Width, Grid.Height));
+                // Only mark the dirty region as changed
+                int dirtyWidth = dirtyMaxX - dirtyMinX + 1;
+                int dirtyHeight = dirtyMaxY - dirtyMinY + 1;
+                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(dirtyMinX, dirtyMinY, dirtyWidth, dirtyHeight));
             }
             finally
             {

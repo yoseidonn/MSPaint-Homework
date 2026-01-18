@@ -1,9 +1,13 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using MSPaint.Core;
+using MSPaint.Tools;
 using MSPaint.ViewModels;
+using WpfButton = System.Windows.Controls.Button;
+using WpfColor = System.Windows.Media.Color;
 
 namespace MSPaint.Views
 {
@@ -28,7 +32,7 @@ namespace MSPaint.Views
             this.PreviewKeyDown += MainWindow_PreviewKeyDown;
         }
 
-        private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void MainWindow_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (_viewModel == null) return;
 
@@ -55,7 +59,7 @@ namespace MSPaint.Views
         private void ToolButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel == null) return;
-            if (sender is Button button && button.Tag is string toolName)
+            if (sender is WpfButton button && button.Tag is string toolName)
             {
                 _viewModel.SelectTool(toolName);
             }
@@ -65,16 +69,32 @@ namespace MSPaint.Views
         {
             if (_viewModel == null || _viewModel.CurrentTool is not TextTool) return;
             
-            var position = e.GetPosition(CanvasControl);
-            int gridX = (int)position.X / _viewModel.Canvas.PixelSize;
-            int gridY = (int)position.Y / _viewModel.Canvas.PixelSize;
+            // Get position relative to the CanvasControl
+            var canvasControl = sender as Canvas.CanvasControl;
+            if (canvasControl == null) return;
+            
+            // Get position relative to the CanvasControl itself
+            var position = e.GetPosition(canvasControl);
+            
+            // Convert screen coordinates to pixel grid coordinates
+            // The Image is scaled by PixelSize, so we need to divide by PixelSize
+            int gridX = (int)(position.X / _viewModel.Canvas.PixelSize);
+            int gridY = (int)(position.Y / _viewModel.Canvas.PixelSize);
+            
+            // Clamp to grid bounds
+            if (_viewModel.Canvas.PixelGrid != null)
+            {
+                gridX = Math.Max(0, Math.Min(gridX, _viewModel.Canvas.PixelGrid.Width - 1));
+                gridY = Math.Max(0, Math.Min(gridY, _viewModel.Canvas.PixelGrid.Height - 1));
+            }
+            
             _viewModel.HandleTextToolClick(gridX, gridY);
         }
 
         private void ColorSwatch_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel == null) return;
-            if (sender is Button button && button.Tag is string colorName)
+            if (sender is WpfButton button && button.Tag is string colorName)
             {
                 var color = ColorPalette.GetColorByName(colorName);
                 _viewModel.SelectColor(color, true);
@@ -110,7 +130,7 @@ namespace MSPaint.Views
             if (colorDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 var color = colorDialog.Color;
-                var mediaColor = Color.FromArgb(color.A, color.R, color.G, color.B);
+                var mediaColor = WpfColor.FromArgb(color.A, color.R, color.G, color.B);
                 _viewModel.SelectColor(mediaColor, isPrimary);
             }
         }

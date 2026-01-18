@@ -10,6 +10,7 @@ using MSPaint.Views;
 using Microsoft.Win32;
 using MediaColor = System.Windows.Media.Color;
 using MediaColors = System.Windows.Media.Colors;
+using WpfMessageBox = System.Windows.MessageBox;
 
 namespace MSPaint.ViewModels
 {
@@ -83,16 +84,31 @@ namespace MSPaint.ViewModels
         }
 
         // Commands
-        public ICommand SelectToolCommand => new RelayCommand<string>(SelectTool);
-        public ICommand SelectColorCommand => new RelayCommand<MediaColor>(color => SelectColor(color, true));
-        public ICommand FileNewCommand => new RelayCommand(FileNew);
-        public ICommand FileOpenCommand => new RelayCommand(FileOpen);
-        public ICommand FileSaveCommand => new RelayCommand(FileSave);
-        public ICommand FileSaveAsCommand => new RelayCommand(FileSaveAs);
+        public System.Windows.Input.ICommand SelectToolCommand => new RelayCommand<string>(SelectTool);
+        public System.Windows.Input.ICommand SelectColorCommand => new RelayCommand<MediaColor>(color => SelectColor(color, true));
+        public System.Windows.Input.ICommand FileNewCommand => new RelayCommand(FileNew);
+        public System.Windows.Input.ICommand FileOpenCommand => new RelayCommand(FileOpen);
+        public System.Windows.Input.ICommand FileSaveCommand => new RelayCommand(FileSave);
+        public System.Windows.Input.ICommand FileSaveAsCommand => new RelayCommand(FileSaveAs);
 
         public void SelectTool(string? toolName)
         {
-            if (string.IsNullOrEmpty(toolName) || Canvas.PixelGrid == null) return;
+            if (string.IsNullOrEmpty(toolName)) return;
+            
+            // If canvas is not initialized, initialize with default settings first
+            if (Canvas.PixelGrid == null)
+            {
+                var defaultSettings = new CanvasSettings
+                {
+                    Width = 64,
+                    Height = 64,
+                    PixelSize = 8,
+                    Background = MediaColors.White
+                };
+                Canvas.Initialize(defaultSettings);
+            }
+
+            if (Canvas.PixelGrid == null) return;
 
             CurrentTool = toolName switch
             {
@@ -111,7 +127,7 @@ namespace MSPaint.ViewModels
             if (CurrentTool is TextTool textTool && Canvas.PixelGrid != null)
             {
                 var dialog = new TextInputDialog(textTool.FontSize);
-                dialog.Owner = Application.Current.MainWindow;
+                dialog.Owner = System.Windows.Application.Current.MainWindow;
                 
                 if (dialog.ShowDialog() == true && !string.IsNullOrWhiteSpace(dialog.Text))
                 {
@@ -157,7 +173,7 @@ namespace MSPaint.ViewModels
 
         public async void FileOpen()
         {
-            var openDialog = new OpenFileDialog
+            var openDialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = new FileService().GetFileDialogFilter(),
                 Title = "Open Image File"
@@ -177,12 +193,12 @@ namespace MSPaint.ViewModels
                     }
                     else
                     {
-                        MessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                        System.Windows.MessageBox.Show("Failed to load file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMessageBox.Show($"Error loading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -201,13 +217,13 @@ namespace MSPaint.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                WpfMessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
         public async void FileSaveAs()
         {
-            var saveDialog = new SaveFileDialog
+            var saveDialog = new Microsoft.Win32.SaveFileDialog
             {
                 Filter = new FileService().GetFileDialogFilter(),
                 Title = "Save Image As",
@@ -223,7 +239,7 @@ namespace MSPaint.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    WpfMessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
         }
@@ -233,9 +249,10 @@ namespace MSPaint.ViewModels
             if (Canvas.PixelGrid == null) return;
 
             var fileService = new FileService();
-            // Get pixel size from canvas settings if available, otherwise use 1
-            int pixelSize = 1; // TODO: Get from canvas settings
-            await fileService.SaveAsync(path, Canvas.PixelGrid, pixelSize);
+            // Save at 1:1 scale (pixelSize = 1) - the actual grid size
+            // The display pixel size is just for zooming, not for file format
+            // This ensures files are saved and loaded consistently
+            await fileService.SaveAsync(path, Canvas.PixelGrid, pixelSize: 1);
         }
 
         private void UpdateToolColor(MediaColor color)
@@ -273,7 +290,7 @@ namespace MSPaint.ViewModels
     /// <summary>
     /// Simple RelayCommand implementation for ICommand
     /// </summary>
-    public class RelayCommand : ICommand
+    public class RelayCommand : System.Windows.Input.ICommand
     {
         private readonly Action _execute;
         private readonly Func<bool>? _canExecute;
@@ -294,7 +311,7 @@ namespace MSPaint.ViewModels
         public void Execute(object? parameter) => _execute();
     }
 
-    public class RelayCommand<T> : ICommand
+    public class RelayCommand<T> : System.Windows.Input.ICommand
     {
         private readonly Action<T?> _execute;
         private readonly Func<T?, bool>? _canExecute;

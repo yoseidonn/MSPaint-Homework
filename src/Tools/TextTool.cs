@@ -66,10 +66,10 @@ namespace MSPaint.Tools
             {
                 // Get PixelsPerDip from main window (for proper DPI scaling)
                 double pixelsPerDip = 1.0;
-                var mainWindow = Application.Current?.MainWindow;
+                var mainWindow = System.Windows.Application.Current?.MainWindow;
                 if (mainWindow != null)
                 {
-                    var source = PresentationSource.FromVisual(mainWindow);
+                    var source = System.Windows.PresentationSource.FromVisual(mainWindow);
                     if (source != null)
                     {
                         var dpi = source.CompositionTarget.TransformToDevice;
@@ -81,8 +81,8 @@ namespace MSPaint.Tools
                 var formattedText = new FormattedText(
                     text,
                     System.Globalization.CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    new Typeface(new FontFamily(_fontFamily), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal),
+                    System.Windows.FlowDirection.LeftToRight,
+                    new Typeface(new System.Windows.Media.FontFamily(_fontFamily), System.Windows.FontStyles.Normal, System.Windows.FontWeights.Normal, System.Windows.FontStretches.Normal),
                     fontSize,
                     new SolidColorBrush(_drawColor),
                     null,
@@ -108,7 +108,7 @@ namespace MSPaint.Tools
                 using (var drawingContext = drawingVisual.RenderOpen())
                 {
                     // Draw text with small offset to avoid clipping
-                    drawingContext.DrawText(formattedText, new Point(1, 1));
+                    drawingContext.DrawText(formattedText, new System.Windows.Point(1, 1));
                 }
                 renderTarget.Render(drawingVisual);
 

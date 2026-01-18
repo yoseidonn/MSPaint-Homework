@@ -71,7 +71,29 @@ namespace MSPaint.Tools
                     int minY = System.Math.Min(_startY, _lastY);
                     int maxY = System.Math.Max(_startY, _lastY);
 
-                    // Draw rectangle outline to preview bitmap (1:1 mapping)
+                    // First, restore the grid pixels in the preview area (clear previous preview)
+                    // Calculate dirty region for preview (only the rectangle outline area)
+                    int dirtyMinX = System.Math.Max(0, minX - 1);
+                    int dirtyMaxX = System.Math.Min(Grid.Width - 1, maxX + 1);
+                    int dirtyMinY = System.Math.Max(0, minY - 1);
+                    int dirtyMaxY = System.Math.Min(Grid.Height - 1, maxY + 1);
+                    for (int y = dirtyMinY; y <= dirtyMaxY; y++)
+                    {
+                        for (int x = dirtyMinX; x <= dirtyMaxX; x++)
+                        {
+                            if (x >= 0 && x < Grid.Width && y >= 0 && y < Grid.Height)
+                            {
+                                MediaColor gridColor = Grid.GetPixel(x, y);
+                                int offset = y * stride + x * bytesPerPixel;
+                                buffer[offset] = gridColor.B;
+                                buffer[offset + 1] = gridColor.G;
+                                buffer[offset + 2] = gridColor.R;
+                                buffer[offset + 3] = gridColor.A;
+                            }
+                        }
+                    }
+
+                    // Now draw rectangle outline only (not filled)
                     for (int x = minX; x <= maxX; x++)
                     {
                         if (x >= 0 && x < Grid.Width)
@@ -84,7 +106,7 @@ namespace MSPaint.Tools
                                 buffer[offset + 2] = _drawColor.R;
                                 buffer[offset + 3] = _drawColor.A;
                             }
-                            if (maxY >= 0 && maxY < Grid.Height)
+                            if (maxY >= 0 && maxY < Grid.Height && maxY != minY)
                             {
                                 int offset = maxY * stride + x * bytesPerPixel;
                                 buffer[offset] = _drawColor.B;
@@ -107,7 +129,7 @@ namespace MSPaint.Tools
                                 buffer[offset + 2] = _drawColor.R;
                                 buffer[offset + 3] = _drawColor.A;
                             }
-                            if (maxX >= 0 && maxX < Grid.Width)
+                            if (maxX >= 0 && maxX < Grid.Width && maxX != minX)
                             {
                                 int offset = y * stride + maxX * bytesPerPixel;
                                 buffer[offset] = _drawColor.B;
@@ -119,7 +141,14 @@ namespace MSPaint.Tools
                     }
                 }
 
-                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(0, 0, Grid.Width, Grid.Height));
+                // Only mark the dirty region as changed (recalculate outside unsafe block)
+                int dirtyMinX2 = System.Math.Max(0, System.Math.Min(_startX, _lastX) - 1);
+                int dirtyMaxX2 = System.Math.Min(Grid.Width - 1, System.Math.Max(_startX, _lastX) + 1);
+                int dirtyMinY2 = System.Math.Max(0, System.Math.Min(_startY, _lastY) - 1);
+                int dirtyMaxY2 = System.Math.Min(Grid.Height - 1, System.Math.Max(_startY, _lastY) + 1);
+                int dirtyWidth = dirtyMaxX2 - dirtyMinX2 + 1;
+                int dirtyHeight = dirtyMaxY2 - dirtyMinY2 + 1;
+                previewBitmap.AddDirtyRect(new System.Windows.Int32Rect(dirtyMinX2, dirtyMinY2, dirtyWidth, dirtyHeight));
             }
             finally
             {

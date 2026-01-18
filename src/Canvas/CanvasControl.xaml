@@ -6,7 +6,8 @@
                Stretch="None" 
                HorizontalAlignment="Left" 
                VerticalAlignment="Top"
-               Source="{Binding Bitmap, RelativeSource={RelativeSource AncestorType=UserControl}}">
+               Source="{Binding Bitmap}"
+               RenderOptions.BitmapScalingMode="NearestNeighbor">
             <Image.RenderTransform>
                 <ScaleTransform x:Name="ScaleTransform" ScaleX="1" ScaleY="1"/>
             </Image.RenderTransform>

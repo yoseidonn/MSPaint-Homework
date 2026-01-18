@@ -33,6 +33,8 @@ namespace MSPaint.ViewModels
             {
                 _pixelGrid = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CanvasWidth));
+                OnPropertyChanged(nameof(CanvasHeight));
             }
         }
 
@@ -43,14 +45,19 @@ namespace MSPaint.ViewModels
             {
                 _bitmap = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CanvasWidth));
+                OnPropertyChanged(nameof(CanvasHeight));
             }
         }
+
+        public int CanvasWidth => PixelGrid != null ? PixelGrid.Width * PixelSize : 0;
+        public int CanvasHeight => PixelGrid != null ? PixelGrid.Height * PixelSize : 0;
 
         public HistoryService History => _history;
         public RenderService Renderer => _renderer;
 
-        public System.Windows.Input.ICommand UndoCommand => new MainViewModel.RelayCommand(async () => await Undo());
-        public System.Windows.Input.ICommand RedoCommand => new MainViewModel.RelayCommand(async () => await Redo());
+        public System.Windows.Input.ICommand UndoCommand => new RelayCommand(async () => await Undo());
+        public System.Windows.Input.ICommand RedoCommand => new RelayCommand(async () => await Redo());
 
         public int PixelSize
         {
@@ -59,6 +66,8 @@ namespace MSPaint.ViewModels
             {
                 _pixelSize = value;
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(CanvasWidth));
+                OnPropertyChanged(nameof(CanvasHeight));
             }
         }
 
@@ -100,14 +109,16 @@ namespace MSPaint.ViewModels
             _currentTool = tool;
         }
 
+        public void SetMouseCaptured(bool captured)
+        {
+            IsMouseCaptured = captured;
+        }
+
         public void OnMouseDown(int x, int y)
         {
             if (_currentTool == null || PixelGrid == null) return;
 
-            // Convert screen coordinates to pixel grid coordinates
-            int gridX = x / PixelSize;
-            int gridY = y / PixelSize;
-
+            // Coordinates are already in pixel grid space (converted in CanvasControl)
             // Special handling for TextTool - show dialog immediately
             if (_currentTool is TextTool)
             {
@@ -115,29 +126,34 @@ namespace MSPaint.ViewModels
                 return;
             }
 
-            _currentTool.StartCollectingChanges();
-            _currentTool.OnMouseDown(gridX, gridY);
+            // Start collecting changes if tool supports it (ToolBase)
+            if (_currentTool is ToolBase toolBase)
+            {
+                toolBase.StartCollectingChanges();
+            }
+            _currentTool.OnMouseDown(x, y);
         }
 
-        public void OnMouseMove(int x, int y)
+        public async void OnMouseMove(int x, int y)
         {
-            if (_currentTool == null || PixelGrid == null) return;
+            if (_currentTool == null || PixelGrid == null || !IsMouseCaptured) return;
 
-            // Convert screen coordinates to pixel grid coordinates
-            int gridX = x / PixelSize;
-            int gridY = y / PixelSize;
-
-            _currentTool.OnMouseMove(gridX, gridY);
+            // Coordinates are already in pixel grid space
+            _currentTool.OnMouseMove(x, y);
 
             // Render preview if tool supports it
             if (_currentTool.UsesPreview && Bitmap != null)
             {
-                _currentTool.RenderPreview(Bitmap, PixelSize);
+                // For preview tools, we need to clear the previous preview first
+                // by re-rendering the grid, then draw the new preview
+                await RenderAsync();
+                // Then render preview on top (1:1 mapping since bitmap is already grid-sized)
+                _currentTool.RenderPreview(Bitmap, 1);
             }
             else
             {
                 // Render dirty region for tools without preview
-                _ = RenderAsync();
+                await RenderAsync();
             }
         }
 
@@ -145,14 +161,16 @@ namespace MSPaint.ViewModels
         {
             if (_currentTool == null || PixelGrid == null) return;
 
-            // Convert screen coordinates to pixel grid coordinates
-            int gridX = x / PixelSize;
-            int gridY = y / PixelSize;
-
-            _currentTool.OnMouseUp(gridX, gridY);
+            // Coordinates are already in pixel grid space
+            _currentTool.OnMouseUp(x, y);
 
             // Create command from collected changes
-            var changes = _currentTool.StopCollectingChanges();
+            List<(int x, int y, System.Windows.Media.Color oldColor, System.Windows.Media.Color newColor)>? changes = null;
+            if (_currentTool is ToolBase toolBase)
+            {
+                changes = toolBase.StopCollectingChanges();
+            }
+            
             if (changes != null && changes.Count > 0)
             {
                 var command = new PixelChangeCommand(PixelGrid, changes);
@@ -162,9 +180,11 @@ namespace MSPaint.ViewModels
                 }
             }
 
-            // Final render
-            _ = RenderAsync();
+            // Final render (clears any preview)
+            _ = RenderAsync(force: true);
         }
+
+        private bool IsMouseCaptured { get; set; }
 
         public async Task Undo()
         {

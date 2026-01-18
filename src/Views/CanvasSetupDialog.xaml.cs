@@ -89,8 +89,8 @@ namespace MSPaint.Views
             }
             else
             {
-                MessageBox.Show("Please enter valid numbers for width, height, and pixel size.", 
-                    "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                System.Windows.MessageBox.Show("Please enter valid numbers for width, height, and pixel size.", 
+                    "Invalid Input", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             }
         }
 
